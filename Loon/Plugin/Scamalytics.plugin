@@ -1,0 +1,38 @@
+#!name=Scamalytics
+#!desc=集成 Scamalytics 欺诈分 + ipapi.co 基础信息。支持首页卡片、后台监控、节点点击测试。
+#!openUrl=https://ipapi.co
+#!author=User & Gemini
+#!homepage=https://scamalytics.com/ip/api/pricing
+#!icon=https://ipapi.co/favicon.ico
+#!date=2025-12-18
+
+[Rule]
+# 基础信息接口 (可指定分流策略，如: 美国)
+DOMAIN-SUFFIX, ipapi.co, Proxy
+# 风险评分接口 (可指定分流策略，如: 台湾)
+DOMAIN-SUFFIX, scamalytics.com, Proxy
+
+[Script]
+# ----------------------------------------
+# 场景 1：首页卡片 (手动点击)
+# ----------------------------------------
+generic script-path=https://raw.githubusercontent.com/Game-2020/Loon/refs/heads/main/Script/Scamalytics.js, timeout=15, tag=Scamalytics手动检测, img-url=https://raw.githubusercontent.com/Koolson/Loon-Icon/master/Source/Shield.png
+
+# ----------------------------------------
+# 场景 2：后台监控 (自动运行)
+# ----------------------------------------
+# 定时自动监控 (建议间隔调大，ipapi.co 免费版有每日请求限制)
+#cron "0 */5 * * * *" script-path=https://raw.githubusercontent.com/Game-2020/Loon/refs/heads/main/Script/Scamalytics.js, timeout=15, tag=Scamalytics定时监控, img-url=https://ipapi.co/favicon.ico, argument=mode=monitor
+
+# ----------------------------------------
+# 场景 3：网络变动自动检测 (Wi-Fi/数据切换时触发)
+# ----------------------------------------
+network-changed script-path=https://raw.githubusercontent.com/Game-2020/Loon/refs/heads/main/Script/Scamalytics.js, timeout=15, tag=Scamalytics变动监控, img-url=https://ipapi.co/favicon.ico, argument=mode=monitor
+
+# ----------------------------------------
+# 场景 4：节点列表点击 (独立节点测试)
+# ----------------------------------------
+#generic script-path=https://raw.githubusercontent.com/Game-2020/Loon/refs/heads/main/Script/Scamalytics.js, timeout=15, tag=Scamalytics节点测试, img-url=https://raw.githubusercontent.com/Koolson/Loon-Icon/master/Source/Shield.png, argument=title=Scamalytics 质量报告
+
+[MitM]
+hostname = ipapi.co, scamalytics.com
