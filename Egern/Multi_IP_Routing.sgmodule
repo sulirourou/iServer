@@ -1,21 +1,22 @@
 #!name=IP查询多路分流
 #!desc=自定义分流：IPPure / IP-API / IPAPI.co
 #!category=Custom
-#!icon=bolt
+#!icon=arrow.branch
 
-# 变量名您可以随意起，比如这里我直接用了 US, HK, JP
-# 意思就是：定义一个叫 US 的变量，默认值是 Proxy
+# === 关键修改 ===
+# 把之前的 US, HK, JP 直接改成您想要的显示名称
+# 格式: 显示名称:默认值
 #!arguments=IPPure:Proxy, IP-API:Proxy, IPAPI:Proxy
 
-# 描述部分：告诉用户 US 这个空是用来填哪里的
-#!arguments-desc=IPPure: IPPure (填美国策略), IP-API: IP-API (填香港策略), IPAPI: IPAPI (填日本策略)
+# 描述文案也对应更新
+#!arguments-desc=IPPure: 设置 ippure.com 的策略, IP-API: 设置 ip-api.com 的策略, IPAPI: 设置 ipapi.co 的策略
 
 [Rule]
-# 引用上面定义的 US 变量
+# 引用 IPPure
 DOMAIN-SUFFIX,ippure.com,{{IPPure}}
 
-# 引用上面定义的 HK 变量
+# 引用 IP-API (注意：变量名必须和上面定义的完全一致)
 DOMAIN-SUFFIX,ip-api.com,{{IP-API}}
 
-# 引用上面定义的 JP 变量
+# 引用 IPAPI
 DOMAIN-SUFFIX,ipapi.co,{{IPAPI}}
