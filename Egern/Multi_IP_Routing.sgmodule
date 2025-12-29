@@ -3,19 +3,20 @@
 #!category=Custom
 #!icon=arrow.branch
 
-# === 关键修改 ===
-# 格式: 显示名称:默认值
-#!arguments=IPPure:Proxy, IP-API:Proxy, IPAPI:Proxy
+# === 核心修正 ===
+# 1. 变量名去掉了连字符(-)，改为纯字母
+# 2. 逗号后面去掉了空格，防止解析错误
+#!arguments=IPPure:Proxy,IPAPICom:Proxy,IPAPICo:Proxy
 
-# 描述文案也对应更新
-#!arguments-desc=IPPure: 设置 ippure.com 的策略, IP-API: 设置 ip-api.com 的策略, IPAPI: 设置 ipapi.co 的策略
+# 描述：指导用户填入策略组名称
+#!arguments-desc=IPPure: 填 ippure.com 的策略组, IPAPICom: 填 ip-api.com 的策略组, IPAPICo: 填 ipapi.co 的策略组
 
 [Rule]
-# 引用 IPPure
+# IPPure -> 引用 IPPure
 DOMAIN-SUFFIX,ippure.com,{{IPPure}}
 
-# 引用 IP-API (注意：变量名必须和上面定义的完全一致)
-DOMAIN-SUFFIX,ip-api.com,{{IP-API}}
+# IP-API -> 引用 IPAPICom
+DOMAIN-SUFFIX,ip-api.com,{{IPAPICom}}
 
-# 引用 IPAPI
-DOMAIN-SUFFIX,ipapi.co,{{IPAPI}}
+# IPAPI.co -> 引用 IPAPICo
+DOMAIN-SUFFIX,ipapi.co,{{IPAPICo}}
