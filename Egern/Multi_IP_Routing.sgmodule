@@ -4,7 +4,6 @@
 #!icon=arrow.branch
 
 # === 关键修改 ===
-# 把之前的 US, HK, JP 直接改成您想要的显示名称
 # 格式: 显示名称:默认值
 #!arguments=IPPure:Proxy, IP-API:Proxy, IPAPI:Proxy
 
