@@ -1,0 +1,6 @@
+scripting:
+  scripts:
+    - name: MediaAI
+      type: panel
+      script_url: https://你的代码链接/media_check_pro.js
+      update_interval: 3600
