@@ -1,24 +1,9 @@
-#!name=IP独立分流 (自选版)
-#!desc=支持 IPPure, IP-API, IPAPI 独立选择策略。导入后请在策略组页面手动选择节点。
+#!name=IP检测独立分流 (参数版)
+#!desc=通过 Script Hub 参数动态指定策略，不增加额外策略组。
 
-# 1. 定义分流规则，分别指向三个不同的虚拟策略组
-rule:
-  - DOMAIN-SUFFIX,ippure.com,IPPure_Select
-  - DOMAIN-SUFFIX,ip-api.com,IP_API_Select
-  - DOMAIN-SUFFIX,ipapi.co,IPAPI_Select
-  - DOMAIN-SUFFIX,ipapi.com,IPAPI_Select
-
-# 2. 在模块内直接定义这三个策略组
-# 这样你导入模块后，Egern 的策略组列表就会多出这三个组，实现“手动自选”
-policy_group:
-  - name: IPPure_Select
-    type: select
-    proxies: [DIRECT, Proxy, 香港节点, 美国节点, 自动选择] # 这里的名字需和你主配置中的组名一致
-
-  - name: IP_API_Select
-    type: select
-    proxies: [DIRECT, Proxy, 香港节点, 美国节点, 自动选择]
-
-  - name: IPAPI_Select
-    type: select
-    proxies: [DIRECT, Proxy, 香港节点, 美国节点, 自动选择]
+[Rule]
+# 使用 {{参数名}} 占位符，由转换器在下载时替换
+DOMAIN-SUFFIX,ippure.com,{{{IPPure}}}
+DOMAIN-SUFFIX,ip-api.com,{{{IPAPI_Standard}}}
+DOMAIN-SUFFIX,ipapi.co,{{{IPAPI_Co}}}
+DOMAIN-SUFFIX,ipapi.com,{{{IPAPI_Co}}}
