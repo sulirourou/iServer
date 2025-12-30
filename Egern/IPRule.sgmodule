@@ -1,9 +1,14 @@
-#!name=IP检测独立分流 (参数版)
-#!desc=通过 Script Hub 参数动态指定策略，不增加额外策略组。
+#!name=IP检测独立分流 (精简版)
+#!desc=支持 IPPure, IP-API, IPAPI.co 独立自定义策略。请在模块参数中手动输入策略名。
+#!category=网络检测
+#!arguments=IPPure:DIRECT,IP_API:DIRECT,IPAPI_Co:DIRECT
 
 [Rule]
-# 使用 {{参数名}} 占位符，由转换器在下载时替换
+# 1. IPPure 纯净度检测
 DOMAIN-SUFFIX,ippure.com,{{{IPPure}}}
-DOMAIN-SUFFIX,ip-api.com,{{{IPAPI_Standard}}}
+
+# 2. IP-API.com 地理位置检测
+DOMAIN-SUFFIX,ip-api.com,{{{IP_API}}}
+
+# 3. IPAPI.co 接口 (仅保留 .co)
 DOMAIN-SUFFIX,ipapi.co,{{{IPAPI_Co}}}
-DOMAIN-SUFFIX,ipapi.com,{{{IPAPI_Co}}}
