@@ -1,14 +1,14 @@
 #!name=IP检测独立分流
-#!desc=支持 IPPure, IP-API, IPAPI.co 独立自定义策略。请在模块参数中手动输入策略名。
+#!desc=支持 IPPure, IPAPI.CO, IP-API.COM 独立自定义策略。请在模块参数中手动输入策略名。
 #!category=网络检测
-#!arguments=IPPure:DIRECT,IP_API:DIRECT,IPAPI_Co:DIRECT
+#!arguments=IPPure:DIRECT,IPAPI.CO:DIRECT,IP-API.COM:DIRECT
 
 [Rule]
-# 1. IPPure 纯净度检测
+# 1. IPPure
 DOMAIN-SUFFIX,ippure.com,{{{IPPure}}}
 
-# 2. IP-API.com 地理位置检测
-DOMAIN-SUFFIX,ip-api.com,{{{IP_API}}}
+# 2. IPAPI.CO
+DOMAIN-SUFFIX,ipapi.co,{{{IPAPI.CO}}}
 
-# 3. IPAPI.co 接口 (仅保留 .co)
-DOMAIN-SUFFIX,ipapi.co,{{{IPAPI_Co}}}
+# 3. IP-API.COM
+DOMAIN-SUFFIX,ip-api.com,{{{IP-API.COM}}}
