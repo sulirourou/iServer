@@ -1,17 +1,21 @@
 /**
- * Egern 流媒体 & AI 归类检测脚本
+ * Egern 流媒体 & AI 归类检测脚本 (带 IP 显示)
  */
 
 (async () => {
   let info = {
     region: "检测中...",
+    ip: "检测中...",
     streaming: {},
     ai: {}
   };
 
-  // 并行检测提升速度
+  // 并行检测
   await Promise.all([
-    getIPInfo().then(res => info.region = res),
+    getIPInfo().then(res => {
+      info.region = res.region;
+      info.ip = res.ip;
+    }),
     // 流媒体类
     checkNetflix().then(res => info.streaming.Netflix = res),
     checkDisney().then(res => info.streaming.Disney = res),
@@ -26,6 +30,7 @@
 
   // 组装面板文字
   let content = `📍 节点地区: ${info.region}\n`;
+  content += `🌐 当前 I P : ${info.ip}\n`; // 新增 IP 显示行
   
   content += `\n🎬 【流媒体服务】\n`;
   content += ` ├ Netflix: ${info.streaming.Netflix}\n`;
@@ -42,22 +47,28 @@
   $done({
     title: "节点解锁检测 (Pro)",
     content: content,
-    icon: "sparkles.tv.fill",
-    "icon-color": "#6236FF"
+    icon: "network",
+    "icon-color": "#007AFF"
   });
 })();
 
-// --- 检测逻辑 (保持高效请求) ---
+// --- 核心逻辑 ---
 
 async function getIPInfo() {
   try {
     let res = await fetch("http://ip-api.com/json/?lang=zh-CN");
     let data = JSON.parse(res.data);
     const flag = data.countryCode.toUpperCase().replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397));
-    return `${flag} ${data.country} - ${data.city}`;
-  } catch { return "❌ 获取地区失败"; }
+    return {
+      region: `${flag} ${data.country} - ${data.city}`,
+      ip: data.query // 提取 IP 地址
+    };
+  } catch { 
+    return { region: "❌ 获取失败", ip: "❌ 获取失败" }; 
+  }
 }
 
+// ... (其余 check 函数保持不变) ...
 async function checkNetflix() {
   try {
     let res = await fetch("https://www.netflix.com/title/81215561");
