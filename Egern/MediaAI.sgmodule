@@ -21,28 +21,3 @@ Media-Check = script-name=Media-Check, title=流媒体 & AI 检测, content=正�
 
 [Script]
 Media-Check = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/sulirourou/Script/main/js/MediaAI.js
-
-
-
-#!name=流媒体 & AI 检测
-#!desc=支持自定义节点检测。在参数内选择策略组。
-#!category=网络检测
-#!arguments=Proxy:DIRECT
-#!arguments-desc=Proxy: 选择要检测的策略组
-
-[Rule]
-# 确保所有检测流量走你选的那个 Proxy
-DOMAIN-SUFFIX,netflix.com,{{{Proxy}}}
-DOMAIN-SUFFIX,disneyplus.com,{{{Proxy}}}
-DOMAIN-SUFFIX,max.com,{{{Proxy}}}
-DOMAIN-SUFFIX,tiktok.com,{{{Proxy}}}
-DOMAIN-SUFFIX,chatgpt.com,{{{Proxy}}}
-DOMAIN-SUFFIX,claude.ai,{{{Proxy}}}
-DOMAIN-SUFFIX,google.com,{{{Proxy}}}
-DOMAIN-SUFFIX,ip-api.com,{{{Proxy}}}
-
-[Panel]
-Media-Check = script-name=Media-Check, title=流媒体 & AI 检测, content=正在获取数据..., style=info, update-interval=3600
-
-[Script]
-Media-Check = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/sulirourou/Script/main/js/MediaAI.js
