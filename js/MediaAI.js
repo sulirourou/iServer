@@ -1,7 +1,8 @@
 /**
- * Egern 完美复刻版
- * 头部严格对齐红框截图格式
- * 图标修正：使用 checkmark.seal.fill (波浪印章)
+ * Egern 完美复刻版 (终极统一版)
+ * 1. 头部：复刻红框格式
+ * 2. 下部：移除树状图，改为与头部一致的清单格式
+ * 3. 图标：波浪印章 (checkmark.seal.fill)
  */
 
 const url = "https://my.ippure.com/v1/info";
@@ -35,35 +36,34 @@ const url = "https://my.ippure.com/v1/info";
     checkGemini().then(res => info.ai.Gemini = res)
   ]);
 
-  // --- ❌ 不要改动这里，严格复刻红框格式 ---
+  // --- 1. 头部 (IP 信息) ---
   let content = `${info.type}: ${info.ip}\n`;
   content += `ASN: AS${info.asn} ${info.org}\n`;
   content += `位置: ${info.flag} ${info.country} ${info.city}\n`;
   content += `原生 IP: ${info.nativeText}\n`;
   content += `${info.riskText}`; 
 
-  // --- 下方流媒体部分 ---
-  content += `\n\n🎬 【流媒体服务】\n`;
-  content += ` ├ Netflix: ${info.streaming.Netflix}\n`;
-  content += ` ├ Disney+: ${info.streaming.Disney}\n`;
-  content += ` ├ HBO Max: ${info.streaming.HBO}\n`;
-  content += ` ├ TikTok: ${info.streaming.TikTok}\n`;
-  content += ` └ YouTube: ${info.streaming.YouTube}\n`;
+  // --- 2. 下部 (流媒体 & AI) - 风格统一化 ---
+  // 移除【】标题和 ├ 符号，保持与上方一致的 "Label: Value" 格式
+  
+  content += `\n`; // 空一行作为分隔
+  content += `Netflix: ${info.streaming.Netflix}\n`;
+  content += `Disney+: ${info.streaming.Disney}\n`;
+  content += `HBO Max: ${info.streaming.HBO}\n`;
+  content += `TikTok: ${info.streaming.TikTok}\n`;
+  content += `YouTube: ${info.streaming.YouTube}\n`;
+  content += `ChatGPT: ${info.ai.ChatGPT}\n`;
+  content += `Claude: ${info.ai.Claude}\n`;
+  content += `Gemini: ${info.ai.Gemini}`;
 
-  content += `\n🤖 【AI 助手】\n`;
-  content += ` ├ ChatGPT: ${info.ai.ChatGPT}\n`;
-  content += ` ├ Claude: ${info.ai.Claude}\n`;
-  content += ` └ Gemini: ${info.ai.Gemini}`;
-
-  // --- 🎨 图标设置区 (已修正) ---
-  // 这里改为 seal (印章)，而不是 shield (盾牌)
-  let icon = "checkmark.seal.fill"; 
+  // --- 🎨 图标设置区 ---
+  let icon = "checkmark.seal.fill"; // 波浪印章
   let color = "#AF52DE"; // 紫色
 
-  // 风险过高自动变色逻辑
+  // 风险过高自动变色
   if (info.riskLevel >= 70) {
       icon = "exclamationmark.triangle.fill";
-      color = "#FF9500"; // 高风险变橙色
+      color = "#FF9500"; 
   }
 
   $done({
@@ -81,23 +81,15 @@ async function getIPPureInfo() {
     let res = await fetch(url);
     let j = JSON.parse(res.data);
     
-    // 1. IP 和 类型
     const ip = j.ip || j.query || "获取失败";
     const type = ip.includes(':') ? 'IPv6' : 'IPv4';
-    
-    // 2. ASN 和 组织
     const asn = j.asn || "";
     const org = j.asOrganization || "";
-
-    // 3. 位置
     const flag = flagEmoji(j.countryCode || "UN");
     const country = j.country || "";
     const city = j.city || "";
-
-    // 4. 原生 IP 文本
     const nativeText = j.isResidential ? "✅ 是 (原生)" : "🏢 否 (机房/商业)";
     
-    // 5. 风险值
     const risk = j.fraudScore || 0;
     let riskText = "";
     if (risk >= 80) riskText = `🛑 极高风险 (${risk})`;
