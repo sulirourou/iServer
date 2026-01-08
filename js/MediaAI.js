@@ -1,6 +1,8 @@
 /**
  * Egern 流媒体 & AI 归类检测脚本
- * 格式：国旗 国家 州/省 城市 (无横杠)
+ * 更新：
+ * 1. 接口更换为 my.ippure.com
+ * 2. 增加名称补齐，实现图标纵向对齐
  */
 
 (async () => {
@@ -10,6 +12,9 @@
     streaming: {},
     ai: {}
   };
+
+  // 辅助函数：名称补齐（统一长度为 8，确保冒号对齐）
+  const pad = (str) => str.padEnd(8, " ");
 
   // 并行执行所有请求
   await Promise.all([
@@ -32,16 +37,16 @@
   content += `🌐 当前 I P : ${info.ip}\n`;
   
   content += `\n🎬 【流媒体服务】\n`;
-  content += ` ├ Netflix: ${info.streaming.Netflix}\n`;
-  content += ` ├ Disney+: ${info.streaming.Disney}\n`;
-  content += ` ├ HBO Max: ${info.streaming.HBO}\n`;
-  content += ` ├ TikTok: ${info.streaming.TikTok}\n`;
-  content += ` └ YouTube: ${info.streaming.YouTube}\n`;
+  content += ` ├ ${pad("Netflix")}: ${info.streaming.Netflix}\n`;
+  content += ` ├ ${pad("Disney+")}: ${info.streaming.Disney}\n`;
+  content += ` ├ ${pad("HBO Max")}: ${info.streaming.HBO}\n`;
+  content += ` ├ ${pad("TikTok")}: ${info.streaming.TikTok}\n`;
+  content += ` └ ${pad("YouTube")}: ${info.streaming.YouTube}\n`;
 
   content += `\n🤖 【AI 助手】\n`;
-  content += ` ├ ChatGPT: ${info.ai.ChatGPT}\n`;
-  content += ` ├ Claude: ${info.ai.Claude}\n`;
-  content += ` └ Gemini: ${info.ai.Gemini}`;
+  content += ` ├ ${pad("ChatGPT")}: ${info.ai.ChatGPT}\n`;
+  content += ` ├ ${pad("Claude")}: ${info.ai.Claude}\n`;
+  content += ` └ ${pad("Gemini")}: ${info.ai.Gemini}`;
 
   $done({
     title: "节点解锁检测",
@@ -55,25 +60,33 @@
 
 async function getIPInfo() {
   try {
-    // 请求 IP-API 获取中文位置信息
-    let res = await fetch("http://ip-api.com/json/?lang=zh-CN");
+    // 请求 my.ippure.com 接口
+    let res = await fetch("https://my.ippure.com/v1/info");
     let data = JSON.parse(res.data);
-    const flag = data.countryCode.toUpperCase().replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397));
-    // 格式：国旗 国家 州/省 城市
+    
+    // my.ippure.com 字段映射
+    // country_code: 国家代码 (CN, US...)
+    // country: 国家名 (China, United States...)
+    // region: 省/州
+    // city: 城市
+    
+    const countryCode = data.country_code || "UN"; 
+    const flag = countryCode.toUpperCase().replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397));
+    
     return {
-      location: `${flag} ${data.country} ${data.regionName} ${data.city}`,
-      ip: data.query
+      location: `${flag} ${data.country} ${data.region} ${data.city}`,
+      ip: data.ip
     };
-  } catch { 
+  } catch (e) { 
     return { location: "❌ 获取失败", ip: "❌ 获取失败" }; 
   }
 }
 
-// 检测函数 (简写版)
+// 检测函数
 async function checkNetflix() {
   try {
     let res = await fetch("https://www.netflix.com/title/81215561");
-    if (res.status === 200) return "✅ 完整";
+    if (res.status === 200) return "✅ 完整"; // 如需完全对其，可改为 "✅"
     if (res.status === 403) return "⚠️ 自制";
     return "❌";
   } catch { return "🚫"; }
@@ -130,7 +143,7 @@ async function checkGemini() {
 
 function fetch(url) {
   return new Promise((resolve) => {
-    $httpClient.get({url, timeout: 5000}, (err, resp, data) => {
+    $httpClient.get({url, timeout: 5000, headers: {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1"}}, (err, resp, data) => {
       if (err) resolve({status: 500, url: "", data: null});
       else { resp.data = data; resolve(resp); }
     });
