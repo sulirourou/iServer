@@ -1,4 +1,4 @@
-#!name=流媒体 & AI 检测
+#!name=IP-Pure & 流媒体 & AI 检测
 #!desc=支持自定义节点检测。在参数内选择策略组。
 #!category=网络检测
 #!arguments=Proxy:DIRECT
