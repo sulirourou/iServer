@@ -1,8 +1,8 @@
 /**
- * Egern 完美复刻版 (最终修正)
- * 1. 头部：严格复刻 IPPure 红框格式
- * 2. 下部：恢复原有的树状结构 (流媒体 & AI)
- * 3. 图标：紫色波浪印章 (checkmark.seal.fill)
+ * Egern 最终定稿版
+ * 1. 布局：头部严格复刻 IPPure 红框 + 下部保留树状图
+ * 2. 图标：紫色波浪印章 (checkmark.seal.fill)
+ * 3. 说明：字体大小受系统限制无法修改
  */
 
 const url = "https://my.ippure.com/v1/info";
@@ -23,7 +23,7 @@ const url = "https://my.ippure.com/v1/info";
     ai: {}
   };
 
-  // 并行执行
+  // 并行执行检测
   await Promise.all([
     getIPPureInfo().then(res => Object.assign(info, res)),
     checkNetflix().then(res => info.streaming.Netflix = res),
@@ -36,14 +36,14 @@ const url = "https://my.ippure.com/v1/info";
     checkGemini().then(res => info.ai.Gemini = res)
   ]);
 
-  // --- 1. 头部：严格复刻红框格式 ---
+  // --- 1. 头部：IP 纯净度 (红框格式) ---
   let content = `${info.type}: ${info.ip}\n`;
   content += `ASN: AS${info.asn} ${info.org}\n`;
   content += `位置: ${info.flag} ${info.country} ${info.city}\n`;
   content += `原生 IP: ${info.nativeText}\n`;
   content += `${info.riskText}`; 
 
-  // --- 2. 下部：恢复原有树状结构 (保留原有) ---
+  // --- 2. 下部：流媒体 & AI (保留原有树状结构) ---
   content += `\n\n🎬 【流媒体服务】\n`;
   content += ` ├ Netflix: ${info.streaming.Netflix}\n`;
   content += ` ├ Disney+: ${info.streaming.Disney}\n`;
@@ -56,12 +56,12 @@ const url = "https://my.ippure.com/v1/info";
   content += ` ├ Claude: ${info.ai.Claude}\n`;
   content += ` └ Gemini: ${info.ai.Gemini}`;
 
-  // --- 🎨 图标设置区 ---
-  // 紫色波浪印章
+  // --- 🎨 图标设置 ---
+  // 锁定为：紫色波浪印章
   let icon = "checkmark.seal.fill"; 
   let color = "#AF52DE"; 
 
-  // 风险过高自动变色
+  // 风险高变色逻辑
   if (info.riskLevel >= 70) {
       icon = "exclamationmark.triangle.fill";
       color = "#FF9500"; 
