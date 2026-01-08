@@ -1,8 +1,8 @@
 /**
- * Egern 完美复刻版 (终极统一版)
- * 1. 头部：复刻红框格式
- * 2. 下部：移除树状图，改为与头部一致的清单格式
- * 3. 图标：波浪印章 (checkmark.seal.fill)
+ * Egern 完美复刻版 (最终修正)
+ * 1. 头部：严格复刻 IPPure 红框格式
+ * 2. 下部：恢复原有的树状结构 (流媒体 & AI)
+ * 3. 图标：紫色波浪印章 (checkmark.seal.fill)
  */
 
 const url = "https://my.ippure.com/v1/info";
@@ -36,29 +36,30 @@ const url = "https://my.ippure.com/v1/info";
     checkGemini().then(res => info.ai.Gemini = res)
   ]);
 
-  // --- 1. 头部 (IP 信息) ---
+  // --- 1. 头部：严格复刻红框格式 ---
   let content = `${info.type}: ${info.ip}\n`;
   content += `ASN: AS${info.asn} ${info.org}\n`;
   content += `位置: ${info.flag} ${info.country} ${info.city}\n`;
   content += `原生 IP: ${info.nativeText}\n`;
   content += `${info.riskText}`; 
 
-  // --- 2. 下部 (流媒体 & AI) - 风格统一化 ---
-  // 移除【】标题和 ├ 符号，保持与上方一致的 "Label: Value" 格式
-  
-  content += `\n`; // 空一行作为分隔
-  content += `Netflix: ${info.streaming.Netflix}\n`;
-  content += `Disney+: ${info.streaming.Disney}\n`;
-  content += `HBO Max: ${info.streaming.HBO}\n`;
-  content += `TikTok: ${info.streaming.TikTok}\n`;
-  content += `YouTube: ${info.streaming.YouTube}\n`;
-  content += `ChatGPT: ${info.ai.ChatGPT}\n`;
-  content += `Claude: ${info.ai.Claude}\n`;
-  content += `Gemini: ${info.ai.Gemini}`;
+  // --- 2. 下部：恢复原有树状结构 (保留原有) ---
+  content += `\n\n🎬 【流媒体服务】\n`;
+  content += ` ├ Netflix: ${info.streaming.Netflix}\n`;
+  content += ` ├ Disney+: ${info.streaming.Disney}\n`;
+  content += ` ├ HBO Max: ${info.streaming.HBO}\n`;
+  content += ` ├ TikTok: ${info.streaming.TikTok}\n`;
+  content += ` └ YouTube: ${info.streaming.YouTube}\n`;
+
+  content += `\n🤖 【AI 助手】\n`;
+  content += ` ├ ChatGPT: ${info.ai.ChatGPT}\n`;
+  content += ` ├ Claude: ${info.ai.Claude}\n`;
+  content += ` └ Gemini: ${info.ai.Gemini}`;
 
   // --- 🎨 图标设置区 ---
-  let icon = "checkmark.seal.fill"; // 波浪印章
-  let color = "#AF52DE"; // 紫色
+  // 紫色波浪印章
+  let icon = "checkmark.seal.fill"; 
+  let color = "#AF52DE"; 
 
   // 风险过高自动变色
   if (info.riskLevel >= 70) {
