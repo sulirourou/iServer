@@ -1,25 +1,26 @@
 /**
- * Egern 流媒体 & AI 归类检测脚本
- * 更新：
- * 1. 接口更换为 my.ippure.com
- * 2. 增加名称补齐，实现图标纵向对齐
+ * Egern 流媒体 & AI 归类检测脚本 (精简版)
+ * 布局：独立行显示位置与IP，图标紧跟名称
  */
 
 (async () => {
   let info = {
-    location: "获取中...",
+    flag: "🏳️",
+    country: "获取中...",
+    region: "",
+    city: "",
     ip: "获取中...",
     streaming: {},
     ai: {}
   };
 
-  // 辅助函数：名称补齐（统一长度为 8，确保冒号对齐）
-  const pad = (str) => str.padEnd(8, " ");
-
   // 并行执行所有请求
   await Promise.all([
     getIPInfo().then(res => {
-      info.location = res.location;
+      info.flag = res.flag;
+      info.country = res.country;
+      info.region = res.region;
+      info.city = res.city;
       info.ip = res.ip;
     }),
     checkNetflix().then(res => info.streaming.Netflix = res),
@@ -32,21 +33,25 @@
     checkGemini().then(res => info.ai.Gemini = res)
   ]);
 
-  // 拼接面板内容
-  let content = `📍 地区: ${info.location}\n`;
-  content += `🌐 IP: ${info.ip}\n`;
+  // --- 拼接面板内容 (完全按照要求排版) ---
+  
+  // 第一行：国旗 国家 州/省 城市 (无前缀)
+  let content = `${info.flag} ${info.country} ${info.region} ${info.city}\n`;
+  
+  // 第二行：纯 IP (无前缀)
+  content += `${info.ip}\n`;
   
   content += `\n🎬 【流媒体服务】\n`;
-  content += ` ├ ${pad("Netflix")}: ${info.streaming.Netflix}\n`;
-  content += ` ├ ${pad("Disney+")}: ${info.streaming.Disney}\n`;
-  content += ` ├ ${pad("HBO Max")}: ${info.streaming.HBO}\n`;
-  content += ` ├ ${pad("TikTok")}: ${info.streaming.TikTok}\n`;
-  content += ` └ ${pad("YouTube")}: ${info.streaming.YouTube}\n`;
+  content += ` ├ Netflix: ${info.streaming.Netflix}\n`;
+  content += ` ├ Disney+: ${info.streaming.Disney}\n`;
+  content += ` ├ HBO Max: ${info.streaming.HBO}\n`;
+  content += ` ├ TikTok: ${info.streaming.TikTok}\n`;
+  content += ` └ YouTube: ${info.streaming.YouTube}\n`;
 
   content += `\n🤖 【AI 助手】\n`;
-  content += ` ├ ${pad("ChatGPT")}: ${info.ai.ChatGPT}\n`;
-  content += ` ├ ${pad("Claude")}: ${info.ai.Claude}\n`;
-  content += ` └ ${pad("Gemini")}: ${info.ai.Gemini}`;
+  content += ` ├ ChatGPT: ${info.ai.ChatGPT}\n`;
+  content += ` ├ Claude: ${info.ai.Claude}\n`;
+  content += ` └ Gemini: ${info.ai.Gemini}`;
 
   $done({
     title: "节点解锁检测",
@@ -60,34 +65,34 @@
 
 async function getIPInfo() {
   try {
-    // 请求 my.ippure.com 接口
+    // 务必确保 Egern 规则中 ippure.com 走代理，否则查到的是国内IP
     let res = await fetch("https://my.ippure.com/v1/info");
     let data = JSON.parse(res.data);
     
-    // my.ippure.com 字段映射
-    // country_code: 国家代码 (CN, US...)
-    // country: 国家名 (China, United States...)
-    // region: 省/州
-    // city: 城市
+    // 获取国家代码，优先尝试 country_code
+    let code = data.country_code || "UN";
     
-    const countryCode = data.country_code || "UN"; 
-    const flag = countryCode.toUpperCase().replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397));
+    // 生成国旗 Emoji
+    const flag = code.toUpperCase().replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397));
     
     return {
-      location: `${flag} ${data.country} ${data.region} ${data.city}`,
-      ip: data.ip
+      flag: flag,
+      country: data.country || "",
+      region: data.region || "",
+      city: data.city || "",
+      ip: data.ip || "获取失败"
     };
   } catch (e) { 
-    return { location: "❌ 获取失败", ip: "❌ 获取失败" }; 
+    return { flag: "❌", country: "获取失败", region: "", city: "", ip: "网络错误" }; 
   }
 }
 
-// 检测函数
+// 检测函数 (移除多余空格，保持紧凑)
 async function checkNetflix() {
   try {
     let res = await fetch("https://www.netflix.com/title/81215561");
-    if (res.status === 200) return "✅ 完整"; // 如需完全对其，可改为 "✅"
-    if (res.status === 403) return "⚠️ 自制";
+    if (res.status === 200) return "✅"; // 之前是"✅ 完整"，现在改短以保持紧凑
+    if (res.status === 403) return "⚠️";
     return "❌";
   } catch { return "🚫"; }
 }
@@ -143,7 +148,11 @@ async function checkGemini() {
 
 function fetch(url) {
   return new Promise((resolve) => {
-    $httpClient.get({url, timeout: 5000, headers: {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1"}}, (err, resp, data) => {
+    // 增加 User-Agent 模拟浏览器行为
+    let headers = {
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
+    };
+    $httpClient.get({url, timeout: 5000, headers}, (err, resp, data) => {
       if (err) resolve({status: 500, url: "", data: null});
       else { resp.data = data; resolve(resp); }
     });
