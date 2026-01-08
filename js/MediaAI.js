@@ -1,28 +1,33 @@
 /**
- * Egern 流媒体 & AI 归类检测脚本 (精简版)
- * 布局：独立行显示位置与IP，图标紧跟名称
+ * Egern 融合脚本：IP 纯净度 + 流媒体 & AI 检测
+ * 逻辑参考：用户提供的 IPPure 脚本
+ * 布局：前缀换行 + 紧凑对齐
  */
+
+const url = "https://my.ippure.com/v1/info";
 
 (async () => {
   let info = {
+    // 基础信息
     flag: "🏳️",
     country: "获取中...",
-    region: "",
     city: "",
     ip: "获取中...",
+    type: "IPv4",
+    asn: "",
+    org: "",
+    nativeText: "",
+    riskText: "",
+    riskLevel: 0, // 用于最后决定图标颜色
+    
+    // 解锁信息
     streaming: {},
     ai: {}
   };
 
-  // 并行执行所有请求
+  // 并行执行：IP检测 + 流媒体检测
   await Promise.all([
-    getIPInfo().then(res => {
-      info.flag = res.flag;
-      info.country = res.country;
-      info.region = res.region;
-      info.city = res.city;
-      info.ip = res.ip;
-    }),
+    getIPPureInfo().then(res => Object.assign(info, res)), // 合并 IP 结果
     checkNetflix().then(res => info.streaming.Netflix = res),
     checkDisney().then(res => info.streaming.Disney = res),
     checkHBO().then(res => info.streaming.HBO = res),
@@ -33,14 +38,20 @@
     checkGemini().then(res => info.ai.Gemini = res)
   ]);
 
-  // --- 拼接面板内容 (完全按照要求排版) ---
-  
-  // 第一行：国旗 国家 州/省 城市 (无前缀)
-  let content = `${info.flag} ${info.country} ${info.region} ${info.city}\n`;
-  
-  // 第二行：纯 IP (无前缀)
+  // --- 面板内容拼接 ---
+
+  // 1. 地区与 ASN (前缀换行)
+  let content = `📍 节点信息:\n`;
+  content += `${info.flag} ${info.country} ${info.city}\n`;
+  content += `AS${info.asn} ${info.org}\n`;
+
+  // 2. IP 与 纯净度 (前缀换行)
+  content += `\n🌐 ${info.type} 状态:\n`;
   content += `${info.ip}\n`;
-  
+  content += `${info.nativeText}\n`;
+  content += `${info.riskText}\n`;
+
+  // 3. 流媒体 (紧凑格式)
   content += `\n🎬 【流媒体服务】\n`;
   content += ` ├ Netflix: ${info.streaming.Netflix}\n`;
   content += ` ├ Disney+: ${info.streaming.Disney}\n`;
@@ -48,50 +59,90 @@
   content += ` ├ TikTok: ${info.streaming.TikTok}\n`;
   content += ` └ YouTube: ${info.streaming.YouTube}\n`;
 
+  // 4. AI (紧凑格式)
   content += `\n🤖 【AI 助手】\n`;
   content += ` ├ ChatGPT: ${info.ai.ChatGPT}\n`;
   content += ` ├ Claude: ${info.ai.Claude}\n`;
   content += ` └ Gemini: ${info.ai.Gemini}`;
 
+  // 动态颜色 (根据风险值)
+  let titleColor = "#34C759"; // 默认绿
+  if (info.riskLevel >= 80) titleColor = "#FF3B30"; // 红
+  else if (info.riskLevel >= 70) titleColor = "#FF9500"; // 橙
+  else if (info.riskLevel >= 40) titleColor = "#FFCC00"; // 黄
+
   $done({
-    title: "节点解锁检测",
+    title: "节点深度检测",
     content: content,
-    icon: "play.tv.fill",
-    "icon-color": "#5856D6"
+    icon: info.riskLevel >= 70 ? "exclamationmark.triangle.fill" : "checkmark.seal.fill",
+    "icon-color": titleColor
   });
 })();
 
-// --- 核心逻辑 ---
+// --- 核心功能区 ---
 
-async function getIPInfo() {
+// 移植自用户提供的 IPPure 逻辑
+async function getIPPureInfo() {
   try {
-    // 务必确保 Egern 规则中 ippure.com 走代理，否则查到的是国内IP
-    let res = await fetch("https://my.ippure.com/v1/info");
-    let data = JSON.parse(res.data);
+    let res = await fetch(url);
+    let j = JSON.parse(res.data);
     
-    // 获取国家代码，优先尝试 country_code
-    let code = data.country_code || "UN";
+    // 变量提取
+    const ip = j.ip || j.query || "获取失败";
+    const isIPv6 = ip.includes(':');
+    const type = isIPv6 ? 'IPv6' : 'IPv4';
     
-    // 生成国旗 Emoji
-    const flag = code.toUpperCase().replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397));
+    // 国旗处理
+    const flag = flagEmoji(j.countryCode || "UN");
     
+    // 原生处理
+    const nativeText = j.isResidential ? "✅ 是（原生）" : "🏢 否（机房/商业）";
+    
+    // 风险处理
+    const risk = j.fraudScore || 0;
+    let riskText = "";
+    if (risk >= 80) riskText = `🛑 极高风险 (${risk})`;
+    else if (risk >= 70) riskText = `⚠️ 高风险 (${risk})`;
+    else if (risk >= 40) riskText = `🔶 中等风险 (${risk})`;
+    else riskText = `✅ 低风险 (${risk})`;
+
     return {
       flag: flag,
-      country: data.country || "",
-      region: data.region || "",
-      city: data.city || "",
-      ip: data.ip || "获取失败"
+      country: j.country || "",
+      city: j.city || "",
+      ip: ip,
+      type: type,
+      asn: j.asn || "",
+      org: j.asOrganization || "",
+      nativeText: nativeText,
+      riskText: riskText,
+      riskLevel: risk
     };
-  } catch (e) { 
-    return { flag: "❌", country: "获取失败", region: "", city: "", ip: "网络错误" }; 
+  } catch (e) {
+    return { 
+      flag: "❌", country: "请求失败", city: "", 
+      ip: "Check Rule!", type: "Error", 
+      asn: "000", org: "Unknown", 
+      nativeText: "❓ 未知", riskText: "❌ 检测超时", riskLevel: 0 
+    };
   }
 }
 
-// 检测函数 (移除多余空格，保持紧凑)
+// 国旗转换函数 (保留用户的 TW->CN 逻辑)
+function flagEmoji(code) {
+  if (!code) return "🏳️";
+  if (code.toUpperCase() === "TW") code = "CN";
+  return String.fromCodePoint(
+    ...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt())
+  );
+}
+
+// --- 流媒体 & AI 检测 ---
+
 async function checkNetflix() {
   try {
     let res = await fetch("https://www.netflix.com/title/81215561");
-    if (res.status === 200) return "✅"; // 之前是"✅ 完整"，现在改短以保持紧凑
+    if (res.status === 200) return "✅";
     if (res.status === 403) return "⚠️";
     return "❌";
   } catch { return "🚫"; }
@@ -148,10 +199,7 @@ async function checkGemini() {
 
 function fetch(url) {
   return new Promise((resolve) => {
-    // 增加 User-Agent 模拟浏览器行为
-    let headers = {
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
-    };
+    let headers = { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" };
     $httpClient.get({url, timeout: 5000, headers}, (err, resp, data) => {
       if (err) resolve({status: 500, url: "", data: null});
       else { resp.data = data; resolve(resp); }
