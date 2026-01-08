@@ -13,7 +13,7 @@ DOMAIN-SUFFIX,tiktok.com,{{{Proxy}}}
 DOMAIN-SUFFIX,chatgpt.com,{{{Proxy}}}
 DOMAIN-SUFFIX,claude.ai,{{{Proxy}}}
 DOMAIN-SUFFIX,google.com,{{{Proxy}}}
-DOMAIN-SUFFIX,ip-api.com,{{{Proxy}}}
+DOMAIN-SUFFIX,ippure.com,{{{Proxy}}}
 
 [Panel]
 # 首页展示面板
