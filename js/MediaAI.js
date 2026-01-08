@@ -1,7 +1,7 @@
 /**
  * Egern 完美复刻版
  * 头部严格对齐红框截图格式
- * 图标：紫色盾牌
+ * 图标修正：使用 checkmark.seal.fill (波浪印章)
  */
 
 const url = "https://my.ippure.com/v1/info";
@@ -41,9 +41,8 @@ const url = "https://my.ippure.com/v1/info";
   content += `位置: ${info.flag} ${info.country} ${info.city}\n`;
   content += `原生 IP: ${info.nativeText}\n`;
   content += `${info.riskText}`; 
-  // 👆 注意：最后一行风险没有前缀，直接是图标开头，这是照抄截图的
 
-  // --- 下方流媒体部分 (保持原有) ---
+  // --- 下方流媒体部分 ---
   content += `\n\n🎬 【流媒体服务】\n`;
   content += ` ├ Netflix: ${info.streaming.Netflix}\n`;
   content += ` ├ Disney+: ${info.streaming.Disney}\n`;
@@ -56,12 +55,12 @@ const url = "https://my.ippure.com/v1/info";
   content += ` ├ Claude: ${info.ai.Claude}\n`;
   content += ` └ Gemini: ${info.ai.Gemini}`;
 
-  // --- 🎨 图标设置区 ---
-  // 这里就是你要的紫色盾牌
-  let icon = "checkmark.shield.fill"; 
+  // --- 🎨 图标设置区 (已修正) ---
+  // 这里改为 seal (印章)，而不是 shield (盾牌)
+  let icon = "checkmark.seal.fill"; 
   let color = "#AF52DE"; // 紫色
 
-  // 风险过高自动变色逻辑 (保留)
+  // 风险过高自动变色逻辑
   if (info.riskLevel >= 70) {
       icon = "exclamationmark.triangle.fill";
       color = "#FF9500"; // 高风险变橙色
@@ -95,12 +94,10 @@ async function getIPPureInfo() {
     const country = j.country || "";
     const city = j.city || "";
 
-    // 4. 原生 IP 文本 (注意空格)
-    // 截图显示：🏢 否 (机房/商业)
+    // 4. 原生 IP 文本
     const nativeText = j.isResidential ? "✅ 是 (原生)" : "🏢 否 (机房/商业)";
     
-    // 5. 风险值 (注意：截图这里没有"风险:"二字，直接是图标)
-    // 截图显示：🔶 中等风险 (40)
+    // 5. 风险值
     const risk = j.fraudScore || 0;
     let riskText = "";
     if (risk >= 80) riskText = `🛑 极高风险 (${risk})`;
