@@ -33,8 +33,8 @@
   ]);
 
   // 拼接面板内容
-  let content = `📍 节点地区: ${info.location}\n`;
-  content += `🌐 当前 I P : ${info.ip}\n`;
+  let content = `📍 地区: ${info.location}\n`;
+  content += `🌐 IP: ${info.ip}\n`;
   
   content += `\n🎬 【流媒体服务】\n`;
   content += ` ├ ${pad("Netflix")}: ${info.streaming.Netflix}\n`;
