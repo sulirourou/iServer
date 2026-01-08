@@ -1,6 +1,7 @@
 /**
  * Egern 完美复刻版
  * 头部严格对齐红框截图格式
+ * 图标：紫色盾牌
  */
 
 const url = "https://my.ippure.com/v1/info";
@@ -55,9 +56,12 @@ const url = "https://my.ippure.com/v1/info";
   content += ` ├ Claude: ${info.ai.Claude}\n`;
   content += ` └ Gemini: ${info.ai.Gemini}`;
 
-  // 动态图标颜色
-  let icon = "checkmark.shield.fill";
-  let color = "#AF52DE"; // 默认紫
+  // --- 🎨 图标设置区 ---
+  // 这里就是你要的紫色盾牌
+  let icon = "checkmark.shield.fill"; 
+  let color = "#AF52DE"; // 紫色
+
+  // 风险过高自动变色逻辑 (保留)
   if (info.riskLevel >= 70) {
       icon = "exclamationmark.triangle.fill";
       color = "#FF9500"; // 高风险变橙色
