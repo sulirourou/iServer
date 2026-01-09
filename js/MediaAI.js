@@ -48,7 +48,7 @@ const proxyUrl = "https://my.ippure.com/v1/info";
   let content = `🏠 本地 IP: ${info.local.ip}\n`;
   content += `📍 位置: ${info.local.flag} ${info.local.country} ${info.local.city}\n`;
   content += `🏢 运营商: ${info.local.isp}\n`;
-  content += `------------------------------\n`;
+  content += `                           \n`;
 
   // --- 2. 中部：落地 IP (全套图标增强) ---
   content += `🛡️ 节点 IP 纯净度\n`;
