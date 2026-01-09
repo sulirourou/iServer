@@ -81,7 +81,7 @@ const proxyUrl = "https://my.ippure.com/v1/info";
   }
 
   $done({
-    title: "节点 IP 纯净度",
+    title: "IP 信息",
     content: content,
     icon: icon,
     "icon-color": color
