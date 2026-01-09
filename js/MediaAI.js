@@ -1,16 +1,17 @@
 /**
- * Egern 融合版 (本地 IP + 落地 IP)
- * 1. 接口：仅使用 my.ippure.com (复用)
- * 2. 策略：通过 policy: 'direct' 检测本地 IP
- * 3. 布局：顶部增加本地 IP，下部保持落地 IP 红框格式
+ * Egern 融合旗舰版 (本地 IP + 落地 IP)
+ * 1. 本地 IP: 使用 myip.ipip.net (显示位置/运营商)
+ * 2. 落地 IP: 使用 my.ippure.com (保持红框格式)
+ * 3. 图标: 紫色波浪印章
  */
 
-const url = "https://my.ippure.com/v1/info";
+const localUrl = "https://myip.ipip.net/json";
+const proxyUrl = "https://my.ippure.com/v1/info";
 
 (async () => {
   let info = {
     // 本地信息
-    local: { ip: "获取中...", flag: "", country: "" },
+    local: { ip: "获取中...", flag: "", country: "", city: "", isp: "" },
     
     // 落地(代理)信息
     ip: "获取中...",
@@ -31,8 +32,8 @@ const url = "https://my.ippure.com/v1/info";
 
   // 并行执行
   await Promise.all([
-    getLocalIP().then(res => info.local = res),           // 1. 获取本地 IP (直连)
-    getLandingIP().then(res => Object.assign(info, res)), // 2. 获取落地 IP (代理)
+    getLocalIP().then(res => info.local = res),           // 1. 获取本地 IP (ipip.net)
+    getLandingIP().then(res => Object.assign(info, res)), // 2. 获取落地 IP (ippure)
     checkNetflix().then(res => info.streaming.Netflix = res),
     checkDisney().then(res => info.streaming.Disney = res),
     checkHBO().then(res => info.streaming.HBO = res),
@@ -43,18 +44,20 @@ const url = "https://my.ippure.com/v1/info";
     checkGemini().then(res => info.ai.Gemini = res)
   ]);
 
-  // --- 1. 顶部：新增本地 IP 显示 ---
-  let content = `🏠 本地 IP: ${info.local.flag} ${info.local.ip}\n`;
+  // --- 1. 顶部：本地 IP (ipip.net) ---
+  let content = `🏠 本地 IP: ${info.local.ip}\n`;
+  content += `📍 位置: ${info.local.flag} ${info.local.country} ${info.local.city}\n`;
+  content += `🏢 运营商: ${info.local.isp}\n`;
   content += `------------------------------\n`;
 
-  // --- 2. 中部：严格复刻红框格式 (落地 IP) ---
+  // --- 2. 中部：落地 IP (严格复刻红框格式) ---
   content += `${info.type}: ${info.ip}\n`;
   content += `ASN: AS${info.asn} ${info.org}\n`;
   content += `位置: ${info.flag} ${info.country} ${info.city}\n`;
   content += `原生 IP: ${info.nativeText}\n`;
   content += `${info.riskText}`; 
 
-  // --- 3. 下部：流媒体 & AI ---
+  // --- 3. 下部：流媒体 & AI (保留树状结构) ---
   content += `\n\n🎬 【流媒体服务】\n`;
   content += ` ├ Netflix: ${info.streaming.Netflix}\n`;
   content += ` ├ Disney+: ${info.streaming.Disney}\n`;
@@ -86,26 +89,41 @@ const url = "https://my.ippure.com/v1/info";
 
 // --- 核心逻辑 ---
 
-// 1. 获取本地 IP (强制直连)
+// 1. 获取本地 IP (强制直连 - ipip.net)
 async function getLocalIP() {
   try {
-    // 使用 policy: 'direct' 复用接口
-    let res = await fetchWithPolicy(url, "direct"); 
+    // policy: 'direct' 确保不走代理
+    let res = await fetchWithPolicy(localUrl, "direct"); 
     let j = JSON.parse(res.data);
-    return {
-      ip: j.ip || "查询失败",
-      flag: flagEmoji(j.countryCode || "UN"),
-      country: j.country || ""
-    };
+    
+    // ipip.net 返回结构: data.ip, data.location[0]=国家, [1]=省, [2]=市, [4]=运营商
+    if (j.ret === "ok" && j.data) {
+        let loc = j.data.location || [];
+        let country = loc[0] || "";
+        
+        // 简单处理国旗 (中国->CN)
+        let code = "UN";
+        if (country === "中国") code = "CN";
+        
+        return {
+            ip: j.data.ip || "查询失败",
+            flag: flagEmoji(code),
+            country: country,
+            city: loc[2] || "",
+            isp: loc[4] || "未知"
+        };
+    } else {
+        throw new Error("API Error");
+    }
   } catch (e) {
-    return { ip: "获取失败", flag: "❌", country: "" };
+    return { ip: "获取失败", flag: "❌", country: "", city: "", isp: "" };
   }
 }
 
-// 2. 获取落地 IP (走默认代理规则)
+// 2. 获取落地 IP (走代理 - ippure)
 async function getLandingIP() {
   try {
-    let res = await fetch(url);
+    let res = await fetch(proxyUrl);
     let j = JSON.parse(res.data);
     
     const ip = j.ip || j.query || "获取失败";
@@ -154,7 +172,7 @@ async function checkChatGPT() { try { let res = await fetch("https://chatgpt.com
 async function checkClaude() { try { let res = await fetch("https://claude.ai/login"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
 async function checkGemini() { try { let res = await fetch("https://gemini.google.com"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
 
-// 基础 fetch (默认策略)
+// 基础 fetch
 function fetch(url) {
   return new Promise((resolve) => {
     let headers = { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" };
@@ -169,7 +187,6 @@ function fetch(url) {
 function fetchWithPolicy(url, policyName) {
   return new Promise((resolve) => {
     let headers = { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" };
-    // 关键参数: policy
     $httpClient.get({url, timeout: 3000, headers, policy: policyName}, (err, resp, data) => {
       if (err) resolve({status: 500, url: "", data: null});
       else { resp.data = data; resolve(resp); }
