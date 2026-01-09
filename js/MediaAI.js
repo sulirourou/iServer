@@ -52,7 +52,6 @@ const proxyUrl = "https://my.ippure.com/v1/info";
   content += `                             \n`;
 
   // --- 2. 中部：落地 IP (全套图标) ---
-  content += `🛡️ 节点 IP 纯净度\n`;
   content += `🌐 ${info.type}: ${info.ip}\n`;
   content += `📡 ASN: AS${info.asn} ${info.org}\n`;
   content += `📍 位置: ${info.flag} ${info.country} ${info.city}\n`;
@@ -68,7 +67,7 @@ const proxyUrl = "https://my.ippure.com/v1/info";
   content += `▶️ YouTube: ${info.streaming.YouTube}\n`;
 
   content += `\n🤖 【AI 助手】\n`;
-  content += `🤖 ChatGPT: ${info.ai.ChatGPT}\n`;
+  content += `🤡 ChatGPT: ${info.ai.ChatGPT}\n`;
   content += `🧠 Claude: ${info.ai.Claude}\n`;
   content += `✨ Gemini: ${info.ai.Gemini}`;
 
