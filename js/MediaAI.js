@@ -1,7 +1,7 @@
 /**
- * Egern 融合旗舰版 (本地 IP + 落地 IP)
- * 1. 本地 IP: 使用 myip.ipip.net (显示位置/运营商)
- * 2. 落地 IP: 使用 my.ippure.com (保持红框格式)
+ * Egern 融合旗舰版 (图标增强版)
+ * 1. 本地 IP: myip.ipip.net (显示位置/运营商)
+ * 2. 落地 IP: my.ippure.com (全套图标 + 🛡️ 标题)
  * 3. 图标: 紫色波浪印章
  */
 
@@ -32,8 +32,8 @@ const proxyUrl = "https://my.ippure.com/v1/info";
 
   // 并行执行
   await Promise.all([
-    getLocalIP().then(res => info.local = res),           // 1. 获取本地 IP (ipip.net)
-    getLandingIP().then(res => Object.assign(info, res)), // 2. 获取落地 IP (ippure)
+    getLocalIP().then(res => info.local = res),
+    getLandingIP().then(res => Object.assign(info, res)),
     checkNetflix().then(res => info.streaming.Netflix = res),
     checkDisney().then(res => info.streaming.Disney = res),
     checkHBO().then(res => info.streaming.HBO = res),
@@ -44,20 +44,21 @@ const proxyUrl = "https://my.ippure.com/v1/info";
     checkGemini().then(res => info.ai.Gemini = res)
   ]);
 
-  // --- 1. 顶部：本地 IP (ipip.net) ---
+  // --- 1. 顶部：本地 IP ---
   let content = `🏠 本地 IP: ${info.local.ip}\n`;
   content += `📍 位置: ${info.local.flag} ${info.local.country} ${info.local.city}\n`;
   content += `🏢 运营商: ${info.local.isp}\n`;
   content += `------------------------------\n`;
 
-  // --- 2. 中部：落地 IP (严格复刻红框格式) ---
-  content += `${info.type}: ${info.ip}\n`;
-  content += `ASN: AS${info.asn} ${info.org}\n`;
-  content += `位置: ${info.flag} ${info.country} ${info.city}\n`;
-  content += `原生 IP: ${info.nativeText}\n`;
+  // --- 2. 中部：落地 IP (全套图标增强) ---
+  content += `🛡️ 节点 IP 纯净度\n`;
+  content += `🌐 ${info.type}: ${info.ip}\n`;
+  content += `📡 ASN: AS${info.asn} ${info.org}\n`;
+  content += `📍 位置: ${info.flag} ${info.country} ${info.city}\n`;
+  content += `🚦 原生 IP: ${info.nativeText}\n`;
   content += `${info.riskText}`; 
 
-  // --- 3. 下部：流媒体 & AI (保留树状结构) ---
+  // --- 3. 下部：流媒体 & AI ---
   content += `\n\n🎬 【流媒体服务】\n`;
   content += ` ├ Netflix: ${info.streaming.Netflix}\n`;
   content += ` ├ Disney+: ${info.streaming.Disney}\n`;
@@ -92,16 +93,12 @@ const proxyUrl = "https://my.ippure.com/v1/info";
 // 1. 获取本地 IP (强制直连 - ipip.net)
 async function getLocalIP() {
   try {
-    // policy: 'direct' 确保不走代理
     let res = await fetchWithPolicy(localUrl, "direct"); 
     let j = JSON.parse(res.data);
     
-    // ipip.net 返回结构: data.ip, data.location[0]=国家, [1]=省, [2]=市, [4]=运营商
     if (j.ret === "ok" && j.data) {
         let loc = j.data.location || [];
         let country = loc[0] || "";
-        
-        // 简单处理国旗 (中国->CN)
         let code = "UN";
         if (country === "中国") code = "CN";
         
