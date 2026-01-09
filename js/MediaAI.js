@@ -52,6 +52,7 @@ const proxyUrl = "https://my.ippure.com/v1/info";
   content += `                             \n`;
 
   // --- 2. 中部：落地 IP (全套图标) ---
+  content += `🛡️ 节点 IP 纯净度\n`;
   content += `🌐 ${info.type}: ${info.ip}\n`;
   content += `📡 ASN: AS${info.asn} ${info.org}\n`;
   content += `📍 位置: ${info.flag} ${info.country} ${info.city}\n`;
