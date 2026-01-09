@@ -1,5 +1,5 @@
 #!name=IP检测网站分流
-#!desc=支持 IPAPI.CO, IP-API.COM,FreeIPAPI.COM 独立自定义策略。请在模块参数中手动输入策略名。
+#!desc=支持 IPAPI.CO, IP-API.COM, FreeIPAPI.COM 独立自定义策略。请在模块参数中手动输入策略名。
 #!category=网络检测
 #!arguments=IPAPI.CO:DIRECT,IP-API.COM:DIRECT,FreeIPAPI.COM:DIRECT
 
