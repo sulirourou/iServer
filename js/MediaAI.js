@@ -165,10 +165,10 @@ async function checkTikTok() { try { let res = await fetch("https://www.tiktok.c
 async function checkDisney() { try { let res = await fetch("https://www.disneyplus.com"); return res.url.includes("preview") ? "✅" : "❌"; } catch { return "🚫"; } }
 async function checkYouTube() { try { let res = await fetch("https://www.youtube.com/premium"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
 
-// 修复部分：改为检测网页主页，覆盖面更广
-async function checkChatGPT() { try { let res = await fetch("https://chatgpt.com"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
+// 修复部分：还原为 iOS 状态接口（此接口规避了网页版的人机验证）
+async function checkChatGPT() { try { let res = await fetch("https://ios.chat.openai.com/public-api/mobile/server_status/v1"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
 
-// 修复部分：改为检测 favicon.ico 静态资源，规避 Cloudflare 脚本拦截
+// 修复部分：保留检测 favicon.ico 静态资源（此方案当前有效）
 async function checkClaude() { try { let res = await fetch("https://claude.ai/favicon.ico"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
 
 async function checkGemini() { try { let res = await fetch("https://gemini.google.com"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
