@@ -1,5 +1,5 @@
 /**
- * Egern 融合旗舰版
+ * Egern 融合旗舰版 10.0
  * 1. 本地 IP: myip.ipip.net (显示位置/运营商)
  * 2. 落地 IP: my.ippure.com (红框格式 + 信息图标)
  */
