@@ -1,8 +1,9 @@
 /**
- * Egern 融合旗舰版 (逻辑重构版)
- * 1. 结构优化: 核心工具 -> 流媒体 -> AI
- * 2. 视觉优化: 增加明确的功能区块注释
- * 3. 核心逻辑: 保持 Netflix 双重检测与 ChatGPT/Claude 特殊适配
+ * Egern 融合旗舰版 (全能增强版)
+ * 1. 结构: 核心工具 -> 流媒体 -> AI
+ * 2. YouTube: 升级为 Rabbit-Spec 逻辑 (显示地区 ✅ US)
+ * 3. Disney+: 升级为 Rabbit-Spec 逻辑 (显示地区 ✅ US)
+ * 4. Netflix: Rabbit-Spec 双重检测 (版权/自制)
  */
 
 const localUrl = "https://myip.ipip.net/json";
@@ -23,29 +24,19 @@ const proxyUrl = "https://my.ippure.com/v1/info";
   // ================= 2. 并行检测队列 =================
   await Promise.all([
     // --- A. 基础网络层 ---
-    // 1. 获取本地直连 IP
     getLocalIP().then(res => info.local = res),
-    // 2. 获取代理落地 IP
     getLandingIP().then(res => Object.assign(info, res)),
     
     // --- B. 流媒体娱乐层 ---
-    // 3. Netflix (双重检测)
-    checkNetflix().then(res => info.streaming.Netflix = res),
-    // 4. Disney+
-    checkDisney().then(res => info.streaming.Disney = res),
-    // 5. HBO Max
+    checkNetflix().then(res => info.streaming.Netflix = res), // 双重检测
+    checkDisney().then(res => info.streaming.Disney = res),   // 地区识别
     checkHBO().then(res => info.streaming.HBO = res),
-    // 6. TikTok
     checkTikTok().then(res => info.streaming.TikTok = res),
-    // 7. YouTube
-    checkYouTube().then(res => info.streaming.YouTube = res),
+    checkYouTube().then(res => info.streaming.YouTube = res), // 地区识别
     
     // --- C. 人工智能层 ---
-    // 8. ChatGPT (iOS 接口)
-    checkChatGPT().then(res => info.ai.ChatGPT = res),
-    // 9. Claude (静态资源)
-    checkClaude().then(res => info.ai.Claude = res),
-    // 10. Gemini
+    checkChatGPT().then(res => info.ai.ChatGPT = res),        // iOS 接口
+    checkClaude().then(res => info.ai.Claude = res),          // Favicon
     checkGemini().then(res => info.ai.Gemini = res)
   ]);
 
@@ -99,10 +90,7 @@ const proxyUrl = "https://my.ippure.com/v1/info";
 //           核心工作区 (基础设施)
 // ===========================================
 
-/**
- * 获取本地直连 IP 信息
- * 策略: direct (直连)
- */
+// 1. 获取本地直连 IP
 async function getLocalIP() {
   try {
     let res = await fetchWithPolicy(localUrl, "direct"); 
@@ -122,10 +110,7 @@ async function getLocalIP() {
   } catch (e) { return { ip: "获取失败", flag: "❌", country: "", city: "", isp: "" }; }
 }
 
-/**
- * 获取代理落地 IP 信息
- * 策略: 默认代理
- */
+// 2. 获取代理落地 IP
 async function getLandingIP() {
   try {
     let res = await fetch(proxyUrl);
@@ -140,7 +125,6 @@ async function getLandingIP() {
     const nativeText = j.isResidential ? "✅ 是 (原生)" : "🏢 否 (机房/商业)";
     const risk = j.fraudScore || 0;
     
-    // 风险等级判定
     let riskText = "";
     if (risk >= 80) riskText = `🛑 极高风险 (${risk})`;
     else if (risk >= 70) riskText = `⚠️ 高风险 (${risk})`;
@@ -153,14 +137,14 @@ async function getLandingIP() {
   }
 }
 
-// 旗帜 Emoji 转换工具
+// 旗帜 Emoji 转换
 function flagEmoji(code) {
   if (!code) return "🏳️";
   if (code.toUpperCase() === "TW") code = "CN";
   return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt()));
 }
 
-// 通用网络请求 (默认超时 5s)
+// 基础 fetch
 function fetch(url) {
   return new Promise((resolve) => {
     let headers = { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" };
@@ -171,7 +155,7 @@ function fetch(url) {
   });
 }
 
-// 指定策略网络请求 (用于强制直连)
+// 策略 fetch
 function fetchWithPolicy(url, policyName) {
   return new Promise((resolve) => {
     let headers = { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" };
@@ -189,21 +173,48 @@ function fetchWithPolicy(url, policyName) {
 // Netflix: 双重检测 (1.版权剧 -> 2.自制剧)
 async function checkNetflix() { 
   try { 
-    // 检测版权剧 (Strict)
     let res1 = await fetch("https://www.netflix.com/title/81215561"); 
     if (res1.status === 200) return "✅"; 
-    
-    // 检测自制剧 (Loose)
     let res2 = await fetch("https://www.netflix.com/title/80018499");
     if (res2.status === 200) return "⚠️ (自制)";
-    
     return "❌"; 
   } catch { return "🚫"; } 
 }
 
-// Disney+
+// Disney+: 升级版 (检测跳转链接中的地区代码)
 async function checkDisney() { 
-    try { let res = await fetch("https://www.disneyplus.com"); return res.url.includes("preview") ? "✅" : "❌"; } catch { return "🚫"; } 
+    try { 
+        let res = await fetch("https://www.disneyplus.com/");
+        if (res.status === 403) return "❌";
+        
+        let url = res.url || "";
+        let regionMatch = url.match(/disneyplus\.com\/([a-z]{2}-[a-z]{2})\//);
+        
+        if (regionMatch && regionMatch[1]) {
+            let region = regionMatch[1].split('-')[1].toUpperCase();
+            return `✅ ${region}`;
+        }
+        if (res.status === 200) return "✅";
+        return "❌"; 
+    } catch { return "🚫"; } 
+}
+
+// YouTube: 升级版 (提取 Premium 地区)
+async function checkYouTube() { 
+    try { 
+        let res = await fetch("https://www.youtube.com/");
+        if (res.status !== 200) return "❌";
+
+        // 尝试从网页源码中提取地区 (例如 "countryCode":"US")
+        let data = res.data;
+        let regionMatch = data.match(/"countryCode":"([A-Z]{2})"/);
+        
+        if (regionMatch && regionMatch[1]) {
+             return `✅ ${regionMatch[1]}`; // 例如: ✅ US
+        }
+        
+        return "✅"; // 无法提取地区但连接正常
+    } catch { return "🚫"; } 
 }
 
 // HBO Max
@@ -216,21 +227,16 @@ async function checkTikTok() {
     try { let res = await fetch("https://www.tiktok.com"); return (res.status === 200 || res.status === 302) ? "✅" : "❌"; } catch { return "🚫"; } 
 }
 
-// YouTube
-async function checkYouTube() { 
-    try { let res = await fetch("https://www.youtube.com/premium"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } 
-}
-
 // ===========================================
 //               AI 检测功能区
 // ===========================================
 
-// ChatGPT: iOS API (规避 Cloudflare 网页盾)
+// ChatGPT: iOS API (规避 Cloudflare)
 async function checkChatGPT() { 
     try { let res = await fetch("https://ios.chat.openai.com/public-api/mobile/server_status/v1"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } 
 }
 
-// Claude: Favicon (静态资源规避登录跳转)
+// Claude: Favicon (规避登录墙)
 async function checkClaude() { 
     try { let res = await fetch("https://claude.ai/favicon.ico"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } 
 }
