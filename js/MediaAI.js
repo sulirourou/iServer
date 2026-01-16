@@ -167,10 +167,11 @@ async function checkTikTok() { try { let res = await fetch("https://www.tiktok.c
 async function checkDisney() { try { let res = await fetch("https://www.disneyplus.com"); return res.url.includes("preview") ? "✅" : "❌"; } catch { return "🚫"; } }
 async function checkYouTube() { try { let res = await fetch("https://www.youtube.com/premium"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
 
-// 修复部分：更改为 iOS 状态接口（规避网页版 403 误判）
-async function checkChatGPT() { try { let res = await fetch("https://ios.chat.openai.com/public-api/mobile/server_status/v1"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
-// 修复部分：增加 302 状态码兼容
-async function checkClaude() { try { let res = await fetch("https://claude.ai/login"); return (res.status === 200 || res.status === 302) ? "✅" : "❌"; } catch { return "🚫"; } }
+// 修复部分：改为检测网页主页，覆盖面更广
+async function checkChatGPT() { try { let res = await fetch("https://chatgpt.com"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
+
+// 修复部分：改为检测 favicon.ico 静态资源，规避 Cloudflare 脚本拦截
+async function checkClaude() { try { let res = await fetch("https://claude.ai/favicon.ico"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
 
 async function checkGemini() { try { let res = await fetch("https://gemini.google.com"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
 
