@@ -1,7 +1,7 @@
 /**
- * Egern 融合旗舰版 (终极排序增强版)
+ * Egern 融合旗舰版 (排序修复版)
  * 1. 核心: IP 检测 + 落地分析
- * 2. 流媒体: 移植 QX 脚本逻辑 (按名称长度排序: 3位在前, 长名在后)
+ * 2. 流媒体: 移植 QX 脚本逻辑 (严格按显示名称长度排序)
  * 3. 样式: 全线统一为 "支持 ⟦🇺🇸⟧ 🎉" 风格
  * 4. AI: ChatGPT(Trace) + Claude/Gemini (按名称长度排序)
  * 5. 注释: 增强功能区隔注释
@@ -49,27 +49,29 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
     // --- 基础网络 ---
     getLocalIP().then(res => info.local = res),
     
-    // --- 流媒体组 (按名字长度排序) ---
-    // 3-4位
-    checkDazn().then(res => info.streaming.Dazn = res),          // Dazn (4)
-    checkHBO().then(res => info.streaming.HBO = res),            // HBO (3 -> HBO Max)
+    // --- 流媒体组 (严格按显示字符长度排序) ---
+    // 4字符
+    checkDazn().then(res => info.streaming.Dazn = res),          // Dazn
     
-    // 6位
-    checkTikTok().then(res => info.streaming.TikTok = res),      // TikTok (6)
-    checkDisney().then(res => info.streaming.Disney = res),      // Disney (6)
+    // 6字符
+    checkTikTok().then(res => info.streaming.TikTok = res),      // TikTok
     
-    // 7位
-    checkNetflix().then(res => info.streaming.Netflix = res),    // Netflix (7)
-    checkYouTube().then(res => info.streaming.YouTube = res),    // YouTube (7)
+    // 7字符 (HBO Max, Disney+, Netflix, YouTube)
+    checkHBO().then(res => info.streaming.HBO = res),            // HBO Max
+    checkDisney().then(res => info.streaming.Disney = res),      // Disney+
+    checkNetflix().then(res => info.streaming.Netflix = res),    // Netflix
+    checkYouTube().then(res => info.streaming.YouTube = res),    // YouTube
     
-    // 9位+
-    checkParamount().then(res => info.streaming.Paramount = res),// Paramount (9)
-    checkDiscovery().then(res => info.streaming.Discovery = res),// Discovery (9)
+    // 10字符+
+    checkParamount().then(res => info.streaming.Paramount = res),// Paramount+
+    checkDiscovery().then(res => info.streaming.Discovery = res),// Discovery+
     
-    // --- AI 组 (按名字长度排序) ---
-    checkClaude().then(res => info.ai.Claude = res),             // Claude (6)
-    checkGemini().then(res => info.ai.Gemini = res),             // Gemini (6)
-    checkChatGPT().then(res => info.ai.ChatGPT = res)            // ChatGPT (7)
+    // --- AI 组 (按显示字符长度排序) ---
+    // 6字符
+    checkClaude().then(res => info.ai.Claude = res),             // Claude
+    checkGemini().then(res => info.ai.Gemini = res),             // Gemini
+    // 7字符
+    checkChatGPT().then(res => info.ai.ChatGPT = res)            // ChatGPT
   ]);
 
   // ===========================================
@@ -83,7 +85,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
   content += `                             \n`;
 
   // --- 中部：节点质量 ---
-  content += `🛡️ 节点 IP 纯净度\n`;
+  content += `🛡️ 【节点 IP 纯净度】\n`;
   content += `🌐 ${info.type}: ${info.ip}\n`;
   content += `📡 ASN: AS${info.asn} ${info.org}\n`;
   content += `📍 位置: ${info.flag} ${info.country} ${info.city}\n`;
@@ -92,24 +94,30 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
 
   // --- 下部：流媒体 (排序展示) ---
   content += `\n\n🎬 【流媒体服务】\n`;
-  // 3-4位
+  
+  // [4字符]
   content += `🥊 Dazn: ${info.streaming.Dazn || "检测失败"}\n`;
-  content += `🎞️ HBO Max: ${info.streaming.HBO}\n`;
-  // 6位
+  
+  // [6字符]
   content += `🎵 TikTok: ${info.streaming.TikTok}\n`;
+  
+  // [7字符]
+  content += `🎞️ HBO Max: ${info.streaming.HBO}\n`;
   content += `🏰 Disney+: ${info.streaming.Disney}\n`;
-  // 7位
   content += `🎥 Netflix: ${info.streaming.Netflix}\n`;
   content += `▶️ YouTube: ${info.streaming.YouTube}\n`;
-  // 9位+
+  
+  // [10字符+]
   content += `🏔️ Paramount+: ${info.streaming.Paramount || "检测失败"}\n`;
   content += `🌍 Discovery+: ${info.streaming.Discovery || "检测失败"}\n`;
 
   // --- 底部：AI 助手 (排序展示) ---
   content += `\n🤖 【AI 助手】\n`;
+  // [6字符]
   content += `🧠 Claude: ${info.ai.Claude}\n`;
   content += `✨ Gemini: ${info.ai.Gemini}\n`;
-  content += `🤡 ChatGPT: ${info.ai.ChatGPT}`; // 最后一行不加换行符
+  // [7字符]
+  content += `🤡 ChatGPT: ${info.ai.ChatGPT}`; 
 
   // --- 图标逻辑 ---
   let icon = "checkmark.seal.fill"; 
@@ -212,7 +220,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
   //           5. 流媒体检测功能区 (排序)
   // ===========================================
 
-  // --- 3-4位 ---
+  // --- 4字符 ---
 
   // DAZN
   function checkDazn() {
@@ -233,19 +241,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       }) 
   }
 
-  // HBO Max
-  function checkHBO() { 
-    return new Promise((resolve) => {
-        let params = { url: "https://www.max.com", timeout: 5000, headers: { 'User-Agent': UA } }
-        $httpClient.get(params, (err, response, data) => {
-            if (err) { resolve("检测失败"); return; }
-            if (response.status === 200) resolve(`支持 ⟦${flagEmoji(info.countryCode)}⟧ 🎉`);
-            else resolve("未支持 🚫");
-        })
-    })
-  }
-
-  // --- 6位 ---
+  // --- 6字符 ---
 
   // TikTok
   function checkTikTok() { 
@@ -254,6 +250,20 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
         $httpClient.get(params, (err, response, data) => {
             if (err) { resolve("检测失败"); return; }
             if (response.status === 200 || response.status === 302) resolve(`支持 ⟦${flagEmoji(info.countryCode)}⟧ 🎉`);
+            else resolve("未支持 🚫");
+        })
+    })
+  }
+
+  // --- 7字符 ---
+
+  // HBO Max
+  function checkHBO() { 
+    return new Promise((resolve) => {
+        let params = { url: "https://www.max.com", timeout: 5000, headers: { 'User-Agent': UA } }
+        $httpClient.get(params, (err, response, data) => {
+            if (err) { resolve("检测失败"); return; }
+            if (response.status === 200) resolve(`支持 ⟦${flagEmoji(info.countryCode)}⟧ 🎉`);
             else resolve("未支持 🚫");
         })
     })
@@ -283,8 +293,6 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
           })
       })
   }
-
-  // --- 7位 ---
 
   // Netflix
   function checkNetflix() {
@@ -329,7 +337,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       })
   }
 
-  // --- 9位+ ---
+  // --- 10字符+ ---
 
   // Paramount+
   function checkParamount() {
@@ -370,7 +378,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
   //           6. AI 检测功能区 (排序)
   // ===========================================
 
-  // Claude (6位)
+  // Claude (6字符)
   async function checkClaude() { 
       try { 
           let res = await fetch("https://claude.ai/favicon.ico"); 
@@ -378,7 +386,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       } catch { return "检测失败"; } 
   }
 
-  // Gemini (6位)
+  // Gemini (6字符)
   async function checkGemini() { 
       try { 
           let res = await fetch("https://gemini.google.com"); 
@@ -386,7 +394,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       } catch { return "检测失败"; } 
   }
 
-  // ChatGPT (7位)
+  // ChatGPT (7字符)
   function checkChatGPT() {
       return new Promise((resolve) => {
           let params = { url: GPT_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA }, 'auto-redirect':false }
