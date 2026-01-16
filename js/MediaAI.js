@@ -1,5 +1,5 @@
 /**
- * Egern 融合旗舰版 10.0
+ * Egern 融合旗舰版 11
  * 1. 本地 IP: myip.ipip.net (显示位置/运营商)
  * 2. 落地 IP: my.ippure.com (红框格式 + 信息图标)
  */
@@ -159,7 +159,7 @@ function flagEmoji(code) {
 }
 
 // --- 检测函数 ---
-async function checkNetflix() { try { let res = await fetch("https://www.netflix.com/title/81215561"); if (res.status === 200) return "✅"; if (res.status === 403) return "⚠️"; return "❌"; } catch { return "🚫"; } }
+async function checkNetflix() { try { let res = await fetch("https://www.netflix.com/"); if (res.status === 200) return "✅"; if (res.status === 403) return "⚠️"; return "❌"; } catch { return "🚫"; } }
 async function checkHBO() { try { let res = await fetch("https://www.max.com"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } }
 async function checkTikTok() { try { let res = await fetch("https://www.tiktok.com"); return (res.status === 200 || res.status === 302) ? "✅" : "❌"; } catch { return "🚫"; } }
 async function checkDisney() { try { let res = await fetch("https://www.disneyplus.com"); return res.url.includes("preview") ? "✅" : "❌"; } catch { return "🚫"; } }
