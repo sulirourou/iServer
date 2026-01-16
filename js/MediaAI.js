@@ -1,9 +1,7 @@
 /**
- * Egern 融合旗舰版 (全图标增强版)
+ * Egern 融合旗舰版
  * 1. 本地 IP: myip.ipip.net (显示位置/运营商)
  * 2. 落地 IP: my.ippure.com (红框格式 + 信息图标)
- * 3. 流媒体/AI: 去除树状符，改为专属图标
- * 4. 整体图标: 紫色波浪印章
  */
 
 const localUrl = "https://myip.ipip.net/json";
