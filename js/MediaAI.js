@@ -1,13 +1,24 @@
 /**
- * Egern 融合旗舰版 (全能增强版)
- * 1. 结构: 核心工具 -> 流媒体 -> AI
- * 2. YouTube: 升级为 Rabbit-Spec 逻辑 (显示地区 ✅ US)
- * 3. Disney+: 升级为 Rabbit-Spec 逻辑 (显示地区 ✅ US)
- * 4. Netflix: Rabbit-Spec 双重检测 (版权/自制)
+ * Egern 融合旗舰版 (合并重构版)
+ * 1. 核心: IP 检测 + 落地分析
+ * 2. 流媒体: 移植自 QuantumultX 脚本 (Disney+/Netflix/DAZN/Paramount/Discovery/YouTube)
+ * 3. AI: ChatGPT(Trace检测) + Claude/Gemini
  */
 
 const localUrl = "https://myip.ipip.net/json";
 const proxyUrl = "https://my.ippure.com/v1/info";
+
+// --- 移植的常量定义 ---
+const NF_BASE_URL = "https://www.netflix.com/title/81280792";
+const DISNEY_LOCATION_BASE_URL = 'https://disney.api.edge.bamgrid.com/graph/v1/device/graphql';
+const YTB_BASE_URL = "https://www.youtube.com/premium";
+const Dazn_BASE_URL = "https://startup.core.indazn.com/misl/v5/Startup";
+const Param_BASE_URL = "https://www.paramountplus.com/";
+const Discovery_token_BASE_URL = "https://us1-prod-direct.discoveryplus.com/token?deviceId=d1a4a5d25212400d1e6985984604d740&realm=go&shortlived=true";
+const Discovery_BASE_URL = "https://us1-prod-direct.discoveryplus.com/users/me";
+const GPT_BASE_URL = 'https://chat.openai.com/';
+const GPT_RegionL_URL = 'https://chat.openai.com/cdn-cgi/trace';
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36';
 
 (async () => {
   // ================= 1. 数据结构初始化 =================
@@ -27,17 +38,18 @@ const proxyUrl = "https://my.ippure.com/v1/info";
     getLocalIP().then(res => info.local = res),
     getLandingIP().then(res => Object.assign(info, res)),
     
-    // --- B. 流媒体娱乐层 ---
-    checkNetflix().then(res => info.streaming.Netflix = res), // 双重检测
-    checkDisney().then(res => info.streaming.Disney = res),   // 地区识别
-    checkHBO().then(res => info.streaming.HBO = res),
-    checkTikTok().then(res => info.streaming.TikTok = res),
-    checkYouTube().then(res => info.streaming.YouTube = res), // 地区识别
+    // --- B. 流媒体娱乐层 (移植逻辑) ---
+    checkNetflix().then(res => info.streaming.Netflix = res),
+    checkDisney().then(res => info.streaming.Disney = res),
+    checkYouTube().then(res => info.streaming.YouTube = res),
+    checkDazn().then(res => info.streaming.Dazn = res),
+    checkParamount().then(res => info.streaming.Paramount = res),
+    checkDiscovery().then(res => info.streaming.Discovery = res),
     
     // --- C. 人工智能层 ---
-    checkChatGPT().then(res => info.ai.ChatGPT = res),        // iOS 接口
-    checkClaude().then(res => info.ai.Claude = res),          // Favicon
-    checkGemini().then(res => info.ai.Gemini = res)
+    checkChatGPT().then(res => info.ai.ChatGPT = res),        // 移植的新版 ChatGPT 检测
+    checkClaude().then(res => info.ai.Claude = res),          // 保持原版 Favicon
+    checkGemini().then(res => info.ai.Gemini = res)           // 保持原版
   ]);
 
   // ================= 3. 面板 UI 构建 =================
@@ -56,13 +68,14 @@ const proxyUrl = "https://my.ippure.com/v1/info";
   content += `🚦 原生 IP: ${info.nativeText}\n`;
   content += `${info.riskText}`; 
 
-  // --- 下部：流媒体 ---
+  // --- 下部：流媒体 (新列表) ---
   content += `\n\n🎬 【流媒体服务】\n`;
   content += `🎥 Netflix: ${info.streaming.Netflix}\n`;
   content += `🏰 Disney+: ${info.streaming.Disney}\n`;
-  content += `🎞️ HBO Max: ${info.streaming.HBO}\n`;
-  content += `🎵 TikTok: ${info.streaming.TikTok}\n`;
   content += `▶️ YouTube: ${info.streaming.YouTube}\n`;
+  content += `🥊 Dazn: ${info.streaming.Dazn || "检测失败"}\n`;
+  content += `🏔️ Paramount+: ${info.streaming.Paramount || "检测失败"}\n`;
+  content += `🌍 Discovery+: ${info.streaming.Discovery || "检测失败"}\n`;
 
   // --- 底部：AI 助手 ---
   content += `\n🤖 【AI 助手】\n`;
@@ -141,13 +154,14 @@ async function getLandingIP() {
 function flagEmoji(code) {
   if (!code) return "🏳️";
   if (code.toUpperCase() === "TW") code = "CN";
+  if (code.toUpperCase() === "UK") code = "GB";
   return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt()));
 }
 
 // 基础 fetch
 function fetch(url) {
   return new Promise((resolve) => {
-    let headers = { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" };
+    let headers = { "User-Agent": UA };
     $httpClient.get({url, timeout: 5000, headers}, (err, resp, data) => {
       if (err) resolve({status: 500, url: "", data: null});
       else { resp.data = data; resolve(resp); }
@@ -158,7 +172,7 @@ function fetch(url) {
 // 策略 fetch
 function fetchWithPolicy(url, policyName) {
   return new Promise((resolve) => {
-    let headers = { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" };
+    let headers = { "User-Agent": UA };
     $httpClient.get({url, timeout: 3000, headers, policy: policyName}, (err, resp, data) => {
       if (err) resolve({status: 500, url: "", data: null});
       else { resp.data = data; resolve(resp); }
@@ -167,81 +181,183 @@ function fetchWithPolicy(url, policyName) {
 }
 
 // ===========================================
-//             流媒体检测功能区
+//           流媒体检测功能区 (照抄移植)
 // ===========================================
 
-// Netflix: 双重检测 (1.版权剧 -> 2.自制剧)
-async function checkNetflix() { 
-  try { 
-    let res1 = await fetch("https://www.netflix.com/title/81215561"); 
-    if (res1.status === 200) return "✅"; 
-    let res2 = await fetch("https://www.netflix.com/title/80018499");
-    if (res2.status === 200) return "⚠️ (自制)";
-    return "❌"; 
-  } catch { return "🚫"; } 
-}
-
-// Disney+: 升级版 (检测跳转链接中的地区代码)
-async function checkDisney() { 
-    try { 
-        let res = await fetch("https://www.disneyplus.com/");
-        if (res.status === 403) return "❌";
-        
-        let url = res.url || "";
-        let regionMatch = url.match(/disneyplus\.com\/([a-z]{2}-[a-z]{2})\//);
-        
-        if (regionMatch && regionMatch[1]) {
-            let region = regionMatch[1].split('-')[1].toUpperCase();
-            return `✅ ${region}`;
+// 1. Disney+ (GraphQL 接口)
+function checkDisney() {
+    return new Promise((resolve) => {
+        let params = {
+            url: DISNEY_LOCATION_BASE_URL,
+            timeout: 5000,
+            headers: {
+                'Accept-Language': 'en',
+                "Authorization": 'ZGlzbmV5JmJyb3dzZXImMS4wLjA.Cu56AgSfBTDag5NiRA81oLHkDZfu5L3CKadnefEAY84',
+                'Content-Type': 'application/json',
+                'User-Agent': UA
+            },
+            body: JSON.stringify({
+                query: 'mutation registerDevice($input: RegisterDeviceInput!) { registerDevice(registerDevice: $input) { grant { grantType assertion } } }',
+                variables: {
+                  input: {
+                    applicationRuntime: 'chrome',
+                    attributes: { browserName: 'chrome', browserVersion: '94.0.4606', manufacturer: 'microsoft', operatingSystem: 'windows', operatingSystemVersion: '10.0', osDeviceIds: [] },
+                    deviceFamily: 'browser',
+                    deviceLanguage: 'en',
+                    deviceProfile: 'windows',
+                  },
+                },
+            }),
         }
-        if (res.status === 200) return "✅";
-        return "❌"; 
-    } catch { return "🚫"; } 
+        $httpClient.post(params, (err, response, data) => {
+            if (err) { resolve("检测失败"); return; }
+            if (response.status == 200) {
+                try {
+                    let resData = JSON.parse(data);
+                    if (resData?.extensions?.sdk?.session) {
+                        let { inSupportedLocation, location: { countryCode } } = resData.extensions.sdk.session;
+                        if (inSupportedLocation == false) resolve(`即将登陆 ⟦${flagEmoji(countryCode)}⟧ ⚠️`);
+                        else resolve(`支持 ⟦${flagEmoji(countryCode)}⟧ 🎉`);
+                    } else { resolve("未支持 🚫"); }
+                } catch(e) { resolve("解析错误"); }
+            } else { resolve("检测失败"); }
+        })
+    })
 }
 
-// YouTube: 升级版 (提取 Premium 地区)
-async function checkYouTube() { 
-    try { 
-        let res = await fetch("https://www.youtube.com/");
-        if (res.status !== 200) return "❌";
-
-        // 尝试从网页源码中提取地区 (例如 "countryCode":"US")
-        let data = res.data;
-        let regionMatch = data.match(/"countryCode":"([A-Z]{2})"/);
-        
-        if (regionMatch && regionMatch[1]) {
-             return `✅ ${regionMatch[1]}`; // 例如: ✅ US
-        }
-        
-        return "✅"; // 无法提取地区但连接正常
-    } catch { return "🚫"; } 
+// 2. YouTube (GL Check)
+function checkYouTube() {
+    return new Promise((resolve) => {
+        let params = { url: YTB_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA } }
+        $httpClient.get(params, (err, response, data) => {
+            if (err || response.status !== 200) { resolve("检测失败"); return; }
+            if (data.indexOf('Premium is not available in your country') !== -1) {
+                resolve("未支持 🚫");
+            } else {
+                let region = '';
+                let re = new RegExp('"GL":"(.*?)"', 'gm');
+                let ret = re.exec(data);
+                if (ret && ret.length === 2) region = ret[1];
+                else if (data.indexOf('www.google.cn') !== -1) region = 'CN';
+                else region = 'US';
+                resolve(`支持 ⟦${flagEmoji(region)}⟧ 🎉`);
+            }
+        })
+    })
 }
 
-// HBO Max
-async function checkHBO() { 
-    try { let res = await fetch("https://www.max.com"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } 
+// 3. Netflix (81280792 + X-Originating-URL)
+function checkNetflix() {
+    return new Promise((resolve) => {
+        let params = { url: NF_BASE_URL, timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15' } }
+        $httpClient.get(params, (err, response, data) => {
+            if (err) { resolve("检测失败"); return; }
+            if (response.status == 403) resolve("未支持 🚫");
+            else if (response.status == 404) resolve("仅自制剧 ⚠️");
+            else if (response.status == 200) {
+                let ourl = response.headers['X-Originating-URL'] || response.headers['x-originating-url'];
+                if (ourl) {
+                    let region = ourl.split('/')[3].split('-')[0];
+                    if (region == 'title') region = 'us';
+                    resolve(`完整支持 ⟦${flagEmoji(region)}⟧ 🎉`);
+                } else {
+                    resolve("完整支持 ⟦未知⟧ 🎉");
+                }
+            } else { resolve("检测失败"); }
+        })
+    })
 }
 
-// TikTok
-async function checkTikTok() { 
-    try { let res = await fetch("https://www.tiktok.com"); return (res.status === 200 || res.status === 302) ? "✅" : "❌"; } catch { return "🚫"; } 
+// 4. DAZN
+function checkDazn() {
+    return new Promise((resolve) => {
+        let params = {
+            url: Dazn_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA, "Content-Type": "application/json" },
+            body: JSON.stringify({ "LandingPageKey":"generic", "Platform":"web", "PlatformAttributes":{}, "Version":"2" })
+        };
+        $httpClient.post(params, (err, response, data) => {
+            if (err) { resolve("检测失败"); return; }
+            if (response.status == 200) {
+                let re = new RegExp('"GeolocatedCountry":"(.*?)"', 'gm');
+                let ret = re.exec(data);
+                if (ret && ret.length === 2) resolve(`支持 ⟦${flagEmoji(ret[1])}⟧ 🎉`);
+                else resolve("未支持 🚫");
+            } else { resolve("检测失败"); }
+        })
+    }) 
+}
+
+// 5. Paramount+
+function checkParamount() {
+    return new Promise((resolve) => {
+        let params = { url: Param_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA } }
+        $httpClient.get(params, (err, response, data) => {
+            if (err) { resolve("检测失败"); return; }
+            if (response.status == 200) resolve("支持 🎉");
+            else if (response.status == 302 || response.status == 403) resolve("未支持 🚫");
+            else resolve("检测失败");
+        })
+    })
+}
+
+// 6. Discovery+
+function checkDiscovery() {
+    return new Promise((resolve) => {
+        let params = { url: Discovery_token_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA } }
+        $httpClient.get(params, (err, response, data) => {
+            if (err || response.status !== 200) { resolve("检测失败"); return; }
+            try {
+                let d = JSON.parse(data);
+                let token = d["data"]["attributes"]["token"];
+                let p = { url: Discovery_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA, "Cookie": `st=${token}` } }
+                $httpClient.get(p, (e, res, resData) => {
+                    if (e || res.status !== 200) { resolve("检测失败"); return; }
+                    let resD = JSON.parse(resData);
+                    let loc = resD["data"]["attributes"]["currentLocationTerritory"];
+                    if (loc == 'us') resolve("支持 (US) 🎉");
+                    else resolve("未支持 🚫");
+                })
+            } catch (e) { resolve("检测失败"); }
+        })
+    })
 }
 
 // ===========================================
 //               AI 检测功能区
 // ===========================================
 
-// ChatGPT: iOS API (规避 Cloudflare)
-async function checkChatGPT() { 
-    try { let res = await fetch("https://ios.chat.openai.com/public-api/mobile/server_status/v1"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } 
+// 7. ChatGPT (使用提供的 Trace 检测逻辑)
+function checkChatGPT() {
+    return new Promise((resolve) => {
+        // 先尝试访问主页，禁止重定向以捕获状态
+        let params = { url: GPT_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA }, 'auto-redirect':false }
+        $httpClient.get(params, (err, response, data) => {
+            if (err) { resolve("网络错误"); return; }
+            
+            // 如果不是文本/html，或者其他风控
+            if (JSON.stringify(response).indexOf("text/plain") == -1) {
+                // 进行 Trace 检测
+                let p = { url: GPT_RegionL_URL, timeout: 5000, headers: { 'User-Agent': UA } }
+                $httpClient.get(p, (e, res, resData) => {
+                    if (e) { resolve("API 失败"); return; }
+                    if (resData.indexOf("loc=") !== -1) {
+                        let region = resData.split("loc=")[1].split("\n")[0];
+                        // 简单黑名单过滤
+                        if (["CN","HK","RU","IR","XX"].indexOf(region) == -1) resolve(`支持 ⟦${flagEmoji(region)}⟧ 🎉`);
+                        else resolve("未支持 🚫");
+                    } else { resolve("未支持 (无Trace) 🚫"); }
+                })
+            } else { resolve("未支持 🚫"); }
+        })
+    })
 }
 
-// Claude: Favicon (规避登录墙)
+// 8. Claude: Favicon (保持原版)
 async function checkClaude() { 
     try { let res = await fetch("https://claude.ai/favicon.ico"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } 
 }
 
-// Gemini
+// 9. Gemini (保持原版)
 async function checkGemini() { 
     try { let res = await fetch("https://gemini.google.com"); return res.status === 200 ? "✅" : "❌"; } catch { return "🚫"; } 
 }
