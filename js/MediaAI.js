@@ -1,10 +1,10 @@
 /**
- * IP信息面板
- * 版本号: v1.0.4
+ * 🌏IP 信息面板
+ * 版本号: v1.0.5
  * 更新日期: 2026-01-17
- * 1. 核心: IP 检测 + 落地分析
- * 2. 排序: IP -> 流媒体 (Dazn...Paramount) -> AI (Grok...ChatGPT)
- * 3. 锁定: Grok 检测 grok.x.ai
+ * 1. 名称修改: 增加地球图标
+ * 2. 核心: 3000ms 超时优化
+ * 3. 排序: 严格保持用户指定顺序
  */
 
 const localUrl = "https://myip.ipip.net/json";
@@ -24,19 +24,17 @@ const GPT_BASE_URL = 'https://chat.openai.com/';
 const GPT_RegionL_URL = 'https://chat.openai.com/cdn-cgi/trace';
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36';
 
+// 统一超时时间 (毫秒)
+const TIMEOUT = 3000; 
+
 (async () => {
   // ===========================================
   //           1. 数据结构初始化
   // ===========================================
   let info = {
-    // [1] IP 类信息
     local: { ip: "获取中...", flag: "", country: "", city: "", isp: "" },
     landing: { ip: "获取中...", type: "IPv4", asn: "", org: "", flag: "🏳️", country: "", city: "", countryCode: "UN", nativeText: "", riskText: "", riskLevel: 0 },
-    
-    // [2] 流媒体类状态
     streaming: {},
-    
-    // [3] AI 类状态
     ai: {}
   };
 
@@ -44,35 +42,32 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
   //           2. 并行检测队列
   // ===========================================
   
-  // 预加载：优先获取落地 IP (为后续检测提供 countryCode)
   await getLandingIP().then(res => Object.assign(info.landing, res));
   
   await Promise.all([
-    // --- [1] IP 类检测 ---
     getLocalIP().then(res => info.local = res),
     
-    // --- [2] 流媒体类检测 (严格指定顺序) ---
-    checkDazn().then(res => info.streaming.Dazn = res),          // 1. Dazn
-    checkTikTok().then(res => info.streaming.TikTok = res),      // 2. TikTok
-    checkNetflix().then(res => info.streaming.Netflix = res),    // 3. Netflix
-    checkDisney().then(res => info.streaming.Disney = res),      // 4. Disney+
-    checkYouTube().then(res => info.streaming.YouTube = res),    // 5. YouTube
-    checkHBO().then(res => info.streaming.HBO = res),            // 6. HBO Max
-    checkDiscovery().then(res => info.streaming.Discovery = res),// 7. Discovery+
-    checkParamount().then(res => info.streaming.Paramount = res),// 8. Paramount+
+    // --- 流媒体类 (顺序: Dazn->TikTok->Netflix->Disney->YouTube->HBO->Discovery->Paramount) ---
+    checkDazn().then(res => info.streaming.Dazn = res),
+    checkTikTok().then(res => info.streaming.TikTok = res),
+    checkNetflix().then(res => info.streaming.Netflix = res),
+    checkDisney().then(res => info.streaming.Disney = res),
+    checkYouTube().then(res => info.streaming.YouTube = res),
+    checkHBO().then(res => info.streaming.HBO = res),
+    checkDiscovery().then(res => info.streaming.Discovery = res),
+    checkParamount().then(res => info.streaming.Paramount = res),
     
-    // --- [3] AI 类检测 (长度排序) ---
-    checkGrok().then(res => info.ai.Grok = res),                 // 1. Grok
-    checkClaude().then(res => info.ai.Claude = res),             // 2. Claude
-    checkGemini().then(res => info.ai.Gemini = res),             // 3. Gemini
-    checkChatGPT().then(res => info.ai.ChatGPT = res)            // 4. ChatGPT
+    // --- AI 类 (顺序: Grok->Claude->Gemini->ChatGPT) ---
+    checkGrok().then(res => info.ai.Grok = res),
+    checkClaude().then(res => info.ai.Claude = res),
+    checkGemini().then(res => info.ai.Gemini = res),
+    checkChatGPT().then(res => info.ai.ChatGPT = res)
   ]);
 
   // ===========================================
   //           3. 面板 UI 构建
   // ===========================================
 
-  // --- [1] IP 类板块 ---
   let content = `🏠 本地 IP: ${info.local.ip}\n`;
   content += `📍 位置: ${info.local.flag} ${info.local.country} ${info.local.city}\n`;
   content += `🏢 运营商: ${info.local.isp}\n`;
@@ -84,25 +79,22 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
   content += `🚦 原生 IP: ${info.landing.nativeText}\n`;
   content += `${info.landing.riskText}`; 
 
-  // --- [2] 流媒体类板块 ---
   content += `\n\n🎬 【流媒体服务】\n`;
-  content += `🥊 Dazn: ${info.streaming.Dazn || "检测失败"}\n`;
+  content += `🥊 Dazn: ${info.streaming.Dazn || "检测超时"}\n`;
   content += `🎵 TikTok: ${info.streaming.TikTok}\n`;
   content += `🎥 Netflix: ${info.streaming.Netflix}\n`;
   content += `🏰 Disney+: ${info.streaming.Disney}\n`;
   content += `▶️ YouTube: ${info.streaming.YouTube}\n`;
   content += `🎞️ HBO Max: ${info.streaming.HBO}\n`;
-  content += `🌍 Discovery+: ${info.streaming.Discovery || "检测失败"}\n`;
-  content += `🏔️ Paramount+: ${info.streaming.Paramount || "检测失败"}\n`;
+  content += `🌍 Discovery+: ${info.streaming.Discovery || "检测超时"}\n`;
+  content += `🏔️ Paramount+: ${info.streaming.Paramount || "检测超时"}\n`;
 
-  // --- [3] AI 类板块 ---
   content += `\n🤖 【AI 助手】\n`;
   content += `✖️ Grok: ${info.ai.Grok}\n`;
   content += `🧠 Claude: ${info.ai.Claude}\n`;
   content += `✨ Gemini: ${info.ai.Gemini}\n`;
   content += `🤡 ChatGPT: ${info.ai.ChatGPT}`; 
 
-  // --- 图标逻辑 ---
   let icon = "checkmark.seal.fill"; 
   let color = "#AF52DE"; 
   if (info.landing.riskLevel >= 70) {
@@ -121,9 +113,6 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
   //           4. 核心功能函数
   // ===========================================
 
-  // --- [1] IP 类函数 ---
-
-  // 获取本地直连 IP
   async function getLocalIP() {
     try {
       let res = await fetchWithPolicy(localUrl, "direct"); 
@@ -137,7 +126,6 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
     } catch (e) { return { ip: "获取失败", flag: "❌", country: "", city: "", isp: "" }; }
   }
 
-  // 获取代理落地 IP
   async function getLandingIP() {
     try {
       let res = await fetch(proxyUrl);
@@ -159,12 +147,9 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
     }
   }
 
-  // --- [2] 流媒体类函数 ---
-
-  // 1. Dazn
   function checkDazn() {
       return new Promise((resolve) => {
-          let params = { url: Dazn_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA, "Content-Type": "application/json" }, body: JSON.stringify({ "LandingPageKey":"generic", "Platform":"web", "PlatformAttributes":{}, "Version":"2" }) };
+          let params = { url: Dazn_BASE_URL, timeout: TIMEOUT, headers: { 'User-Agent': UA, "Content-Type": "application/json" }, body: JSON.stringify({ "LandingPageKey":"generic", "Platform":"web", "PlatformAttributes":{}, "Version":"2" }) };
           $httpClient.post(params, (err, response, data) => {
               if (err) { resolve("检测失败"); return; }
               if (response.status == 200) {
@@ -177,10 +162,9 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       }) 
   }
 
-  // 2. TikTok
   function checkTikTok() { 
     return new Promise((resolve) => {
-        let params = { url: "https://www.tiktok.com", timeout: 5000, headers: { 'User-Agent': UA } }
+        let params = { url: "https://www.tiktok.com", timeout: TIMEOUT, headers: { 'User-Agent': UA } }
         $httpClient.get(params, (err, response, data) => {
             if (err) { resolve("检测失败"); return; }
             if (response.status === 200 || response.status === 302) resolve(`支持 ⟦${flagEmoji(info.landing.countryCode)}⟧ 🎉`);
@@ -189,10 +173,9 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
     })
   }
 
-  // 3. Netflix
   function checkNetflix() {
       return new Promise((resolve) => {
-          let params = { url: NF_BASE_URL, timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15' } }
+          let params = { url: NF_BASE_URL, timeout: TIMEOUT, headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15' } }
           $httpClient.get(params, (err, response, data) => {
               if (err) { resolve("检测失败"); return; }
               if (response.status == 403) resolve("未支持 🚫");
@@ -209,10 +192,9 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       })
   }
 
-  // 4. Disney+
   function checkDisney() {
       return new Promise((resolve) => {
-          let params = { url: DISNEY_LOCATION_BASE_URL, timeout: 5000, headers: { 'Accept-Language': 'en', "Authorization": 'ZGlzbmV5JmJyb3dzZXImMS4wLjA.Cu56AgSfBTDag5NiRA81oLHkDZfu5L3CKadnefEAY84', 'Content-Type': 'application/json', 'User-Agent': UA }, body: JSON.stringify({ query: 'mutation registerDevice($input: RegisterDeviceInput!) { registerDevice(registerDevice: $input) { grant { grantType assertion } } }', variables: { input: { applicationRuntime: 'chrome', attributes: { browserName: 'chrome', browserVersion: '94.0.4606', manufacturer: 'microsoft', operatingSystem: 'windows', operatingSystemVersion: '10.0', osDeviceIds: [] }, deviceFamily: 'browser', deviceLanguage: 'en', deviceProfile: 'windows' } } }) }
+          let params = { url: DISNEY_LOCATION_BASE_URL, timeout: TIMEOUT, headers: { 'Accept-Language': 'en', "Authorization": 'ZGlzbmV5JmJyb3dzZXImMS4wLjA.Cu56AgSfBTDag5NiRA81oLHkDZfu5L3CKadnefEAY84', 'Content-Type': 'application/json', 'User-Agent': UA }, body: JSON.stringify({ query: 'mutation registerDevice($input: RegisterDeviceInput!) { registerDevice(registerDevice: $input) { grant { grantType assertion } } }', variables: { input: { applicationRuntime: 'chrome', attributes: { browserName: 'chrome', browserVersion: '94.0.4606', manufacturer: 'microsoft', operatingSystem: 'windows', operatingSystemVersion: '10.0', osDeviceIds: [] }, deviceFamily: 'browser', deviceLanguage: 'en', deviceProfile: 'windows' } } }) }
           $httpClient.post(params, (err, response, data) => {
               if (err) { resolve("检测失败"); return; }
               if (response.status == 200) {
@@ -229,10 +211,9 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       })
   }
 
-  // 5. YouTube
   function checkYouTube() {
       return new Promise((resolve) => {
-          let params = { url: YTB_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA } }
+          let params = { url: YTB_BASE_URL, timeout: TIMEOUT, headers: { 'User-Agent': UA } }
           $httpClient.get(params, (err, response, data) => {
               if (err || response.status !== 200) { resolve("检测失败"); return; }
               if (data.indexOf('Premium is not available in your country') !== -1) resolve("未支持 🚫");
@@ -249,10 +230,9 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       })
   }
 
-  // 6. HBO Max
   function checkHBO() { 
     return new Promise((resolve) => {
-        let params = { url: "https://www.max.com", timeout: 5000, headers: { 'User-Agent': UA } }
+        let params = { url: "https://www.max.com", timeout: TIMEOUT, headers: { 'User-Agent': UA } }
         $httpClient.get(params, (err, response, data) => {
             if (err) { resolve("检测失败"); return; }
             if (response.status === 200) resolve(`支持 ⟦${flagEmoji(info.landing.countryCode)}⟧ 🎉`);
@@ -261,16 +241,15 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
     })
   }
 
-  // 7. Discovery+
   function checkDiscovery() {
       return new Promise((resolve) => {
-          let params = { url: Discovery_token_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA } }
+          let params = { url: Discovery_token_BASE_URL, timeout: TIMEOUT, headers: { 'User-Agent': UA } }
           $httpClient.get(params, (err, response, data) => {
               if (err || response.status !== 200) { resolve("检测失败"); return; }
               try {
                   let d = JSON.parse(data);
                   let token = d["data"]["attributes"]["token"];
-                  let p = { url: Discovery_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA, "Cookie": `st=${token}` } }
+                  let p = { url: Discovery_BASE_URL, timeout: TIMEOUT, headers: { 'User-Agent': UA, "Cookie": `st=${token}` } }
                   $httpClient.get(p, (e, res, resData) => {
                       if (e || res.status !== 200) { resolve("检测失败"); return; }
                       let resD = JSON.parse(resData);
@@ -283,10 +262,9 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       })
   }
 
-  // 8. Paramount+
   function checkParamount() {
       return new Promise((resolve) => {
-          let params = { url: Param_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA } }
+          let params = { url: Param_BASE_URL, timeout: TIMEOUT, headers: { 'User-Agent': UA } }
           $httpClient.get(params, (err, response, data) => {
               if (err) { resolve("检测失败"); return; }
               if (response.status == 200) resolve(`支持 ⟦${flagEmoji(info.landing.countryCode)}⟧ 🎉`); 
@@ -296,9 +274,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       })
   }
 
-  // --- [3] AI 类函数 ---
-
-  // 1. Grok (锁定为 grok.x.ai)
+  // 保持 grok.x.ai 以遵循 "不要回退x.com" 的指令
   async function checkGrok() {
     try {
         let res = await fetch("https://grok.x.ai");
@@ -306,7 +282,6 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
     } catch { return "检测失败"; }
   }
 
-  // 2. Claude
   async function checkClaude() { 
       try { 
           let res = await fetch("https://claude.ai/favicon.ico"); 
@@ -314,7 +289,6 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       } catch { return "检测失败"; } 
   }
 
-  // 3. Gemini
   async function checkGemini() { 
       try { 
           let res = await fetch("https://gemini.google.com"); 
@@ -322,14 +296,13 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       } catch { return "检测失败"; } 
   }
 
-  // 4. ChatGPT
   function checkChatGPT() {
       return new Promise((resolve) => {
-          let params = { url: GPT_BASE_URL, timeout: 5000, headers: { 'User-Agent': UA }, 'auto-redirect':false }
+          let params = { url: GPT_BASE_URL, timeout: TIMEOUT, headers: { 'User-Agent': UA }, 'auto-redirect':false }
           $httpClient.get(params, (err, response, data) => {
               if (err) { resolve("网络错误"); return; }
               if (JSON.stringify(response).indexOf("text/plain") == -1) {
-                  let p = { url: GPT_RegionL_URL, timeout: 5000, headers: { 'User-Agent': UA } }
+                  let p = { url: GPT_RegionL_URL, timeout: TIMEOUT, headers: { 'User-Agent': UA } }
                   $httpClient.get(p, (e, res, resData) => {
                       if (e) { resolve("API 失败"); return; }
                       if (resData.indexOf("loc=") !== -1) {
@@ -343,7 +316,6 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       })
   }
 
-  // --- 辅助工具 ---
   function flagEmoji(code) {
     if (!code) return "🏳️";
     if (code.toUpperCase() === "TW") code = "CN";
@@ -354,7 +326,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
   function fetch(url) {
     return new Promise((resolve) => {
       let headers = { "User-Agent": UA };
-      $httpClient.get({url, timeout: 5000, headers}, (err, resp, data) => {
+      $httpClient.get({url, timeout: TIMEOUT, headers}, (err, resp, data) => {
         if (err) resolve({status: 500, url: "", data: null});
         else { resp.data = data; resolve(resp); }
       });
