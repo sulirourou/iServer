@@ -1,6 +1,8 @@
 /**
- * Egern 融合旗舰版
- * 1. IP 类: 本地 IP + 落地 IP (合并展示)
+ * Egern 融合旗舰版 (Grok 修复版)
+ * 版本号: v1.0.1
+ * 更新日期: 2026-01-17
+ * * 1. IP 类: 本地 IP + 落地 IP (合并展示)
  * 2. 流媒体类: Dazn -> TikTok -> Netflix -> Disney+ -> YouTube -> HBO -> Discovery -> Paramount
  * 3. AI 类: Grok -> Claude -> Gemini -> ChatGPT
  */
@@ -74,7 +76,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
   let content = `🏠 本地 IP: ${info.local.ip}\n`;
   content += `📍 位置: ${info.local.flag} ${info.local.country} ${info.local.city}\n`;
   content += `🏢 运营商: ${info.local.isp}\n`;
-  content += `                           \n`;
+  content += `-------------------------\n`; // 分割线
   content += `🛡️ 【节点 IP 纯净度】\n`;
   content += `🌐 ${info.landing.type}: ${info.landing.ip}\n`;
   content += `📡 ASN: AS${info.landing.asn} ${info.landing.org}\n`;
@@ -296,10 +298,11 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
 
   // --- [3] AI 类函数 ---
 
-  // 1. Grok
+  // 1. Grok (修复版)
   async function checkGrok() {
     try {
-        let res = await fetch("https://x.com");
+        // 修复：改用 grok.x.ai 落地页检测，避免 x.com 对无 Cookie 机房 IP 的 403 误判
+        let res = await fetch("https://grok.x.ai");
         return (res.status === 200 || res.status === 302) ? `支持 ⟦${flagEmoji(info.landing.countryCode)}⟧ 🎉` : "未支持 🚫";
     } catch { return "检测失败"; }
   }
