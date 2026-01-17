@@ -1,10 +1,10 @@
 /**
- * Egern 融合旗舰版 (Grok 修复版)
- * 版本号: v1.0.1
+ * IP信息面板
+ * 版本号: v1.0.3
  * 更新日期: 2026-01-17
- * * 1. IP 类: 本地 IP + 落地 IP (合并展示)
- * 2. 流媒体类: Dazn -> TikTok -> Netflix -> Disney+ -> YouTube -> HBO -> Discovery -> Paramount
- * 3. AI 类: Grok -> Claude -> Gemini -> ChatGPT
+ * 1. 核心: IP 检测 + 落地分析
+ * 2. 排序: IP -> 流媒体 (Dazn...Paramount) -> AI (Grok...ChatGPT)
+ * 3. 锁定: Grok 检测 grok.x.ai
  */
 
 const localUrl = "https://myip.ipip.net/json";
@@ -72,11 +72,11 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
   //           3. 面板 UI 构建
   // ===========================================
 
-  // --- [1] IP 类板块 (合并展示) ---
+  // --- [1] IP 类板块 ---
   let content = `🏠 本地 IP: ${info.local.ip}\n`;
   content += `📍 位置: ${info.local.flag} ${info.local.country} ${info.local.city}\n`;
   content += `🏢 运营商: ${info.local.isp}\n`;
-  content += `-------------------------\n`; // 分割线
+  content += `\n`; 
   content += `🛡️ 【节点 IP 纯净度】\n`;
   content += `🌐 ${info.landing.type}: ${info.landing.ip}\n`;
   content += `📡 ASN: AS${info.landing.asn} ${info.landing.org}\n`;
@@ -111,7 +111,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
   }
 
   $done({
-    title: "🌏 IP 信息",
+    title: "IP信息面板",
     content: content,
     icon: icon,
     "icon-color": color
@@ -298,10 +298,9 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
 
   // --- [3] AI 类函数 ---
 
-  // 1. Grok (修复版)
+  // 1. Grok (锁定为 grok.x.ai)
   async function checkGrok() {
     try {
-        // 修复：改用 grok.x.ai 落地页检测，避免 x.com 对无 Cookie 机房 IP 的 403 误判
         let res = await fetch("https://grok.x.ai");
         return (res.status === 200 || res.status === 302) ? `支持 ⟦${flagEmoji(info.landing.countryCode)}⟧ 🎉` : "未支持 🚫";
     } catch { return "检测失败"; }
