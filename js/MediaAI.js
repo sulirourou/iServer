@@ -1,5 +1,5 @@
 /**
- * Egern 融合旗舰版 (板块重构版)
+ * Egern 融合旗舰版
  * 1. IP 类: 本地 IP + 落地 IP (合并展示)
  * 2. 流媒体类: Dazn -> TikTok -> Netflix -> Disney+ -> YouTube -> HBO -> Discovery -> Paramount
  * 3. AI 类: Grok -> Claude -> Gemini -> ChatGPT
