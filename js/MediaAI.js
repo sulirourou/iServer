@@ -111,7 +111,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
   }
 
   $done({
-    title: "IP信息面板",
+    title: "🌏IP 信息面板",
     content: content,
     icon: icon,
     "icon-color": color
